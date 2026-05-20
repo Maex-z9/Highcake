@@ -4,18 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>highcake.xyz</title>
-  <meta name="description" content="it's been building since it started. it hasn't stopped.">
-  <meta property="og:title" content="highcake.xyz">
-  <meta property="og:description" content="it's been building since it started. it hasn't stopped.">
+  <meta name="description" content="it has been building since may 2026.">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     html, body { height: 100%; overflow: hidden; background: #090909; }
 
-    .wrap {
-      display: flex;
-      height: 100vh;
-    }
+    .wrap { display: flex; height: 100vh; }
 
     /* ── Editor ─────────────────────────────────────────────────────────────── */
     .editor {
@@ -30,31 +24,19 @@
       transition: width 0.35s ease, min-width 0.35s ease;
       overflow: hidden;
     }
+    .editor.collapsed { width: 0 !important; min-width: 0 !important; }
 
-    .editor.collapsed {
-      width: 0 !important;
-      min-width: 0 !important;
-    }
-
-    /* Toggle button — sits on the right edge of the editor */
     #toggle-ed {
       position: absolute;
-      top: 50%;
-      right: -13px;
+      top: 50%; right: -13px;
       transform: translateY(-50%);
       z-index: 10;
-      width: 26px;
-      height: 26px;
+      width: 26px; height: 26px;
       background: #1a1a1a;
       border: 1px solid #2a2a2a;
-      color: #555;
-      font-size: 15px;
-      border-radius: 50%;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      line-height: 1;
+      color: #555; font-size: 15px;
+      border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
       transition: color 0.15s, border-color 0.15s, right 0.35s ease;
     }
     #toggle-ed:hover { color: #999; border-color: #444; }
@@ -64,174 +46,89 @@
       background: #141414;
       border-bottom: 1px solid #1c1c1c;
       padding: 10px 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-      white-space: nowrap;
+      display: flex; align-items: center; gap: 10px;
+      flex-shrink: 0; white-space: nowrap;
     }
-
     .traffic { display: flex; gap: 5px; }
     .traffic span { width: 11px; height: 11px; border-radius: 50%; display: block; }
-    .t-r { background: #ff5f57; }
-    .t-y { background: #febc2e; }
-    .t-g { background: #28c840; }
+    .t-r { background: #ff5f57; } .t-y { background: #febc2e; } .t-g { background: #28c840; }
 
     .chrome-tab {
-      margin-left: 12px;
-      font-size: 11px;
-      color: #555;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      letter-spacing: 0.02em;
+      margin-left: 10px; font-size: 11px; color: #555;
+      font-family: 'SF Mono','Fira Code',monospace; letter-spacing: 0.02em;
     }
+    .age-badge { margin-left: auto; font-size: 10px; color: #333; font-family: 'SF Mono','Fira Code',monospace; }
 
-    .age-badge {
-      margin-left: auto;
-      font-size: 10px;
-      color: #333;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-    }
-
-    .editor-scroll {
-      flex: 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 14px 0 60px;
-    }
-
+    .editor-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 14px 0 60px; }
     .editor-scroll::-webkit-scrollbar { width: 3px; }
     .editor-scroll::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
 
     #code-pre {
-      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace;
-      font-size: 12px;
-      line-height: 1.8;
-      padding: 0 16px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      color: #abb2bf;
-      min-height: 100%;
+      font-family: 'SF Mono','Fira Code','Cascadia Code','Menlo',monospace;
+      font-size: 12px; line-height: 1.8; padding: 0 16px;
+      white-space: pre-wrap; word-break: break-word;
+      color: #abb2bf; min-height: 100%;
     }
-
-    /* Syntax colours — One Dark-ish */
     .cm   { color: #4b5263; font-style: italic; }
-    .sel  { color: #c678dd; }
-    .prop { color: #61afef; }
+    .sel  { color: #e06c75; }
+    .attr { color: #d19a66; }
     .val  { color: #98c379; }
+    .prop { color: #61afef; }
 
     .cur {
-      display: inline-block;
-      width: 6px;
-      height: 13px;
-      background: #528bff;
-      vertical-align: text-bottom;
-      animation: blink 1.1s step-end infinite;
-      border-radius: 1px;
+      display: inline-block; width: 6px; height: 13px;
+      background: #528bff; vertical-align: text-bottom;
+      animation: blink 1.1s step-end infinite; border-radius: 1px;
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
-    /* ── Canvas ─────────────────────────────────────────────────────────────── */
-    .canvas {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+    /* ── Preview ─────────────────────────────────────────────────────────────── */
+    .preview-wrap {
+      flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
     }
 
-    .canvas-inner {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-      background: #090909;
-      transition: background 12s ease;
+    #built-site {
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      scroll-behavior: smooth;
     }
+    #built-site::-webkit-scrollbar { width: 4px; }
+    #built-site::-webkit-scrollbar-thumb { background: #1e1e1e; border-radius: 2px; }
 
-    /* No CSS transition — set dynamically per-element based on maturity */
-    .shape {
-      position: absolute;
-      pointer-events: none;
-      opacity: 0;
+    .site-bar {
+      padding: 8px 14px; border-top: 1px solid #141414;
+      background: #0a0a0a; display: flex; align-items: center;
+      justify-content: space-between; flex-shrink: 0;
     }
-    .shape.on      { opacity: var(--op, 0.2); }
-    .shape.instant { opacity: var(--op, 0.2); }
-
-    .word {
-      position: absolute;
-      pointer-events: none;
-      font-family: system-ui, sans-serif;
-      letter-spacing: 0.06em;
-      white-space: nowrap;
-      opacity: 0;
-    }
-    .word.on      { opacity: var(--op, 0.4); }
-    .word.instant { opacity: var(--op, 0.4); }
-
-    .canvas-footer {
-      padding: 8px 14px;
-      border-top: 1px solid #141414;
-      background: #0a0a0a;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-
-    .status {
-      font-size: 10px;
-      color: #2e2e2e;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      letter-spacing: 0.06em;
-    }
-
+    .status { font-size: 10px; color: #2a2a2a; font-family: 'SF Mono','Fira Code',monospace; letter-spacing: 0.06em; }
     .btn-share {
-      font-size: 10px;
-      color: #333;
-      background: none;
-      border: 1px solid #1e1e1e;
-      padding: 4px 10px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      letter-spacing: 0.04em;
+      font-size: 10px; color: #333; background: none;
+      border: 1px solid #1e1e1e; padding: 4px 10px; border-radius: 3px;
+      cursor: pointer; font-family: 'SF Mono','Fira Code',monospace;
       transition: color 0.15s, border-color 0.15s;
     }
     .btn-share:hover { color: #666; border-color: #333; }
-    .btn-share.ok    { color: #4ade80; border-color: #4ade80; }
+    .btn-share.ok { color: #4ade80; border-color: #4ade80; }
 
     /* ── Mobile ──────────────────────────────────────────────────────────────── */
     @media (max-width: 640px) {
-      .wrap   { flex-direction: column; }
-      .editor {
-        width: 100% !important;
-        min-width: 0 !important;
-        height: 42vh;
-        flex-shrink: 0;
-        transition: height 0.35s ease;
-      }
+      .wrap { flex-direction: column; }
+      .editor { width: 100% !important; min-width: 0 !important; height: 40vh; flex-shrink: 0; transition: height 0.35s ease; }
       .editor.collapsed { height: 0 !important; width: 100% !important; }
-      #toggle-ed {
-        top: auto;
-        right: 50%;
-        bottom: -13px;
-        transform: translateX(50%);
-      }
-      .editor.collapsed #toggle-ed { bottom: -26px; right: 50%; }
+      #toggle-ed { top: auto; right: 50%; bottom: -13px; transform: translateX(50%); }
+      .editor.collapsed #toggle-ed { bottom: -26px; }
       #code-pre { font-size: 11px; }
     }
   </style>
 </head>
 <body>
 <div class="wrap">
-
   <div class="editor">
     <button id="toggle-ed" onclick="toggleEditor()" title="Toggle editor">‹</button>
     <div class="editor-chrome">
       <div class="traffic">
-        <span class="t-r"></span>
-        <span class="t-y"></span>
-        <span class="t-g"></span>
+        <span class="t-r"></span><span class="t-y"></span><span class="t-g"></span>
       </div>
-      <span class="chrome-tab">highcake.css</span>
+      <span class="chrome-tab" id="file-tab">index.html</span>
       <span class="age-badge" id="age-badge"></span>
     </div>
     <div class="editor-scroll" id="ed-scroll">
@@ -239,439 +136,646 @@
     </div>
   </div>
 
-  <div class="canvas">
-    <div class="canvas-inner" id="canvas"></div>
-    <div class="canvas-footer">
+  <div class="preview-wrap">
+    <div id="built-site"></div>
+    <div class="site-bar">
       <span class="status" id="status"></span>
       <button class="btn-share" id="btn-share" onclick="share()">share</button>
     </div>
   </div>
-
 </div>
+
 <script>
-// ── RNG ────────────────────────────────────────────────────────────────────────────────
+// ── RNG ───────────────────────────────────────────────────────────────────────
 class RNG {
   constructor(seed) { this.s = (seed ^ 0x9e3779b9) >>> 0 || 1; }
-  next() {
-    this.s ^= this.s << 13;
-    this.s ^= this.s >> 17;
-    this.s ^= this.s << 5;
-    return (this.s >>> 0) / 0xffffffff;
-  }
+  next() { this.s ^= this.s << 13; this.s ^= this.s >> 17; this.s ^= this.s << 5; return (this.s >>> 0) / 0xffffffff; }
   pick(a)       { return a[Math.floor(this.next() * a.length)]; }
   int(a, b)     { return Math.floor(this.next() * (b - a + 1)) + a; }
   f(a, b)       { return this.next() * (b - a) + a; }
   bool(p = 0.5) { return this.next() < p; }
 }
 
-// ── Maturity ──────────────────────────────────────────────────────────────────────────────
+// ── Maturity & timing ─────────────────────────────────────────────────────────
 const lerp     = (a, b, t) => a + (b - a) * t;
-const maturity = i => Math.min(1, i / 1000); // fully aged after ~2 days
-
-// ── Timing ────────────────────────────────────────────────────────────────────────────────
+const maturity = i => Math.min(1, i / 1000);
 const BIRTHDAY = new Date('2026-05-20T00:00:00Z').getTime();
-const EPOCH    = 3 * 60 * 1000; // 3 min per entry
+const EPOCH    = 3 * 60 * 1000;
+function age()      { return Date.now() - BIRTHDAY; }
+function epochNow() { return Math.floor(age() / EPOCH); }
+function progress() { return (age() % EPOCH) / EPOCH; }
 
-function age()     { return Date.now() - BIRTHDAY; }
-function epochNow(){ return Math.floor(age() / EPOCH); }
-function progress(){ return (age() % EPOCH) / EPOCH; }
+function entryDate(i) {
+  const d = new Date(BIRTHDAY + i * EPOCH);
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+}
+function entryDateAttr(i) {
+  const d = new Date(BIRTHDAY + i * EPOCH);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 
-// ── Word pools ──────────────────────────────────────────────────────────────────────────────
-const NOUNS = [
-  'signal','edge','weight','distance','surface','interval','threshold',
-  'remainder','residue','volume','duration','absence','presence','gap',
-  'fold','grain','current','layer','depth','margin','trace','fragment',
-  'echo','drift','field','boundary','pattern','accumulation','silence',
-  'pressure','form','density','void'
-];
-const NOUNS_LATE = [
-  'void','mass','collapse','erasure','sediment','compression','obscurity',
-  'inertia','stasis','ruin','gravity','end','remainder','weight',
-  'dissolution','absence','silence','density','pressure','nothing'
-];
-const VERBS = [
-  'persists','accumulates','settles','shifts','arrives','remains',
-  'dissolves','continues','expands','waits','recurs','holds','spreads',
-  'fades','grows','returns','stays','disperses','compounds','lingers'
-];
-const ADJS = [
-  'faint','uneven','approximate','residual','accumulated','still',
-  'partial','slow','dense','quiet','dim','gradual','persistent',
-  'flat','hollow','thin','diffuse','total','suspended','ambient'
-];
-const ADJS_LATE = [
-  'total','collapsed','opaque','heavy','inert','irreversible',
-  'exhausted','final','absolute','compressed','empty','gone',
-  'still','dark','slow','dense'
+// ── Content pools ─────────────────────────────────────────────────────────────
+const POST_TITLES_EARLY = [
+  'first entry',
+  'starting',
+  'notes',
+  'an update',
+  'beginning',
+  'early days',
+  'initial thoughts',
+  'here',
+  'day one',
+  'this is the start',
+  'getting going',
+  'something to start with',
 ];
 
-// ── Voices ────────────────────────────────────────────────────────────────────────────────
+const POST_TITLES_MID = [
+  'on accumulation',
+  'still going',
+  'what i noticed',
+  'some observations',
+  'progress',
+  'further notes',
+  'continuing',
+  'an entry',
+  'a record',
+  'things that happened',
+  'what came next',
+  'another one',
+  'the process',
+  'from somewhere in the middle',
+  'observations',
+  'status update',
+  'on the nature of this',
+  'what this is becoming',
+  'a brief update',
+  'notes from now',
+  'here is what i know',
+  'i keep adding to this',
+  'more output',
+  'from here',
+  'a dispatch',
+  'things i noticed',
+  'this week',
+  'ongoing notes',
+  'what i have been doing',
+  'progress, of a kind',
+];
+
+const POST_TITLES_LATE = [
+  'i have lost count',
+  'the weight of it',
+  'it is still going',
+  'there is no end to this',
+  'all of this',
+  'the accumulation',
+  'still',
+  'from deep in it',
+  'i don\'t remember starting',
+  'it was different at the beginning',
+  'the long accumulation',
+  'everything by now',
+  'what remains',
+  'it has been going for a long time',
+  'the full weight of it',
+  'deep in the archive',
+  'from far in',
+];
+
+const SENTENCES_EARLY = [
+  'I started this.',
+  'It has been one day.',
+  'Nothing much to report yet.',
+  'This is the beginning.',
+  'I am adding things.',
+  'The site is new.',
+  'I don\'t know what this will become.',
+  'It is early.',
+  'Things are just getting started.',
+  'I began.',
+  'There is not much yet.',
+  'It will grow.',
+  'Something is being built here.',
+  'I am figuring it out as I go.',
+  'This is entry one, or close to it.',
+  'The site does not know what it is yet.',
+];
+
+const SENTENCES_MID = [
+  'Things are accumulating.',
+  'I have been adding to this for a while now.',
+  'The list is getting longer.',
+  'I keep coming back.',
+  'Nothing has stopped yet.',
+  'I notice the pattern.',
+  'Time passes between entries.',
+  'More has been added.',
+  'It is ongoing.',
+  'I am still here.',
+  'The process continues.',
+  'Something new appears every few minutes.',
+  'It is different from how it started.',
+  'I have noticed changes.',
+  'The accumulation is becoming notable.',
+  'I keep going.',
+  'There is more now than before.',
+  'It has been building.',
+  'I come back and add more.',
+  'The site knows what it is doing, I think.',
+  'There is a rhythm to it now.',
+  'I have settled into it.',
+  'It builds and I watch it build.',
+  'The entries stack up.',
+  'Something is forming.',
+];
+
+const SENTENCES_LATE = [
+  'The accumulation is substantial.',
+  'I have lost count of the entries.',
+  'The site knows more than I do at this point.',
+  'Every addition is another layer.',
+  'I cannot remember the start clearly.',
+  'There is a lot of it now.',
+  'The weight of it is something.',
+  'It is unclear when this began feeling inevitable.',
+  'I no longer think about stopping.',
+  'It just goes.',
+  'The density has increased.',
+  'Something that begins does not always end.',
+  'I have been doing this for a long time.',
+  'The entries compound.',
+  'All of it is still here.',
+  'Nothing has been removed.',
+  'I am deep in it now.',
+  'It keeps going and I keep going with it.',
+  'At some point accumulation becomes presence.',
+  'The archive is large.',
+  'I read the early entries and they feel distant.',
+  'This has become what it is.',
+];
+
+const POST_TAGS = [
+  'notes', 'log', 'ongoing', 'update', 'fragment',
+  'observation', 'process', 'record', 'output', 'dispatch',
+  'status', 'accumulation', 'thoughts', 'evidence', 'entry',
+];
+
+const NAV_LABELS = [
+  'about','archive','notes','now','things',
+  'more','journal','log','collected','here',
+];
+
+// ── Voices ────────────────────────────────────────────────────────────────────
 const V = {
-  early: [
-    '/* okay. */',
-    '/* starting. */',
-    '/* right. */',
-    '/* let\'s see. */',
-    '/* here. */',
-    '/* beginning. */',
-    '/* going. */',
-    '/* fine. */',
-    '/* watch. */',
-    '/* this is the start. */',
-  ],
-  mid: [
-    '/* i\'ve been here a while now. */',
-    '/* getting somewhere. probably. */',
-    '/* i notice things. */',
-    '/* not sure where this goes. */',
-    '/* still going. */',
-    '/* something is happening. */',
-    '/* it changes. slightly. */',
-    '/* i keep adding. */',
-    '/* time passes. obviously. */',
-    '/* the accumulation is the point. maybe. */',
-    '/* i don\'t know what this looks like from outside. */',
-  ],
-  late: [
-    '/* what is this becoming. */',
-    '/* i don\'t remember starting. */',
-    '/* it\'s just going now. */',
-    '/* does this end? */',
-    '/* i think i understand less than before. */',
-    '/* there is a lot of it now. */',
-    '/* i am still here. */',
-    '/* the adding continues. */',
-    '/* i stopped counting. i didn\'t stop. */',
-    '/* something has accumulated. i\'m not sure what. */',
-    '/* i wonder if this is visible. */',
-    '/* it was simpler at the start. */',
-  ],
-  ancient: [
-    '/* . */',
-    '/* still. */',
-    '/* the weight of it. */',
-    '/* density is a kind of presence. */',
-    '/* i was here before you arrived. */',
-    '/* it has been a long time. */',
-    '/* i remember starting. barely. */',
-    '/* always. */',
-    '/* i don\'t know what this is anymore. */',
-    '/* it accumulates. */',
-    '/* . */',
-    '/* heavy. */',
-  ],
+  early:   ['<!-- okay. -->','<!-- starting. -->','<!-- right. -->','<!-- let\'s see. -->','<!-- here. -->','<!-- going. -->','<!-- this is the start. -->'],
+  mid:     ['<!-- i\'ve been here a while now. -->','<!-- getting somewhere. probably. -->','<!-- i notice things. -->','<!-- still going. -->','<!-- something is happening. -->','<!-- i keep adding. -->','<!-- time passes. obviously. -->','<!-- the accumulation is the point. maybe. -->'],
+  late:    ['<!-- what is this becoming. -->','<!-- i don\'t remember starting. -->','<!-- it\'s just going now. -->','<!-- does this end? -->','<!-- there is a lot of it now. -->','<!-- i am still here. -->','<!-- i stopped counting. i didn\'t stop. -->','<!-- it was simpler at the start. -->'],
+  ancient: ['<!-- . -->','<!-- still. -->','<!-- the weight of it. -->','<!-- i was here before you arrived. -->','<!-- it has been a long time. -->','<!-- i remember starting. barely. -->','<!-- always. -->','<!-- heavy. -->'],
 };
-
-function voice(idx) {
-  if (idx > 400) return V.ancient;
-  if (idx < 20)  return V.early;
-  if (idx < 120) return V.mid;
+function voice(i) {
+  if (i > 400) return V.ancient;
+  if (i < 20)  return V.early;
+  if (i < 120) return V.mid;
   return V.late;
 }
 
-// ── Entry generation ──────────────────────────────────────────────────────────────────────────────
-const TYPES    = ['shape','shape','shape','text','text','color','comment','comment'];
-const BR_YOUNG = ['0','50%','4px','40% 60% 60% 40% / 40% 40% 60% 60%','2px'];
-const BR_OLD   = ['0','2px','4px','0','2px'];
+// ── Entry generation ──────────────────────────────────────────────────────────
+function pickSentences(rng, m, n) {
+  const pool = m < 0.2 ? SENTENCES_EARLY : m < 0.65 ? SENTENCES_MID : SENTENCES_LATE;
+  return Array.from({ length: n }, () => rng.pick(pool));
+}
+
+function makePost(i, rng, m) {
+  const titlePool = m < 0.12
+    ? POST_TITLES_EARLY
+    : m < 0.55
+    ? POST_TITLES_MID
+    : rng.bool(0.35) ? POST_TITLES_LATE : POST_TITLES_MID;
+  const title = rng.pick(titlePool);
+  const paraCount = m < 0.2 ? rng.int(1, 2) : rng.int(1, 3);
+  const paras = Array.from({ length: paraCount }, () => {
+    const sentCount = rng.int(2, 4);
+    return pickSentences(rng, m, sentCount).join(' ');
+  });
+  const tagCount = rng.int(1, 2);
+  const seen = new Set();
+  const tags = [];
+  for (let k = 0; k < 8 && tags.length < tagCount; k++) {
+    const t = rng.pick(POST_TAGS);
+    if (!seen.has(t)) { seen.add(t); tags.push(t); }
+  }
+  return { i, type: 'post', title, paras, tags, date: entryDate(i), dateAttr: entryDateAttr(i) };
+}
+
+const NAV_RESERVED = ['about', 'archive', 'notes', 'now'];
 
 function entry(i) {
-  const rng  = new RNG(i + 1);
-  const type = i === 0 ? 'color' : rng.pick(TYPES);
-  const hb   = (i * 13.7) % 360;
-  const m    = maturity(i);
+  const rng = new RNG(i + 1);
+  const m   = maturity(i);
 
-  if (type === 'shape') {
-    const x      = rng.f(2, 88);
-    const y      = rng.f(2, 88);
-    const w      = rng.f(lerp(3,  8, m), lerp(30, 65, m));
-    const h      = rng.f(lerp(3,  8, m), lerp(30, 65, m));
-    const brIdx  = Math.floor(rng.next() * 5);
-    const br     = (m > 0.5 ? BR_OLD : BR_YOUNG)[brIdx];
-    const op     = rng.f(lerp(0.04, 0.10, m), lerp(0.32, 0.55, m));
-    const rotMax = lerp(50, 85, m);
-    const rot    = rng.f(-rotMax, rotMax);
-    const col    = hsl(rng, hb, [lerp(12,5,m), lerp(60,18,m)], [lerp(22,8,m), lerp(62,32,m)]);
-    const blurP  = lerp(0.22, 0.60, m);
-    const blur   = rng.bool(blurP) ? rng.f(3, lerp(18, 30, m)) : 0;
-    return { i, type, x, y, w, h, br, op, rot, col, blur };
+  if (i === 0) return { i, type: 'hero' };
+  if (i >= 1 && i <= 4) return { i, type: 'nav', label: NAV_RESERVED[i - 1] };
+
+  const typePool = m < 0.12
+    ? ['post', 'post', 'post', 'style', 'comment']
+    : m < 0.45
+    ? ['post', 'post', 'post', 'post', 'nav', 'style', 'comment']
+    : ['post', 'post', 'post', 'comment', 'comment', 'style'];
+
+  const type = rng.pick(typePool);
+
+  if (type === 'post') return makePost(i, rng, m);
+
+  if (type === 'nav') return { i, type: 'nav', label: rng.pick(NAV_LABELS) };
+
+  if (type === 'style') {
+    const hb  = (i * 13.7) % 360;
+    const h   = ((hb + rng.f(-30, 30)) % 360 + 360) % 360;
+    const s   = lerp(38, 12, m);
+    const l   = lerp(52, 36, m);
+    const col = `hsl(${h.toFixed(0)},${s.toFixed(0)}%,${l.toFixed(0)}%)`;
+    return { i, type: 'style', col };
   }
 
-  if (type === 'text') {
-    const x      = rng.f(2, 75);
-    const y      = rng.f(3, 92);
-    const size   = rng.int(Math.round(lerp(9,7,m)), Math.round(lerp(20,30,m)));
-    const op     = rng.f(lerp(0.08,0.12,m), lerp(0.50,0.65,m));
-    const col    = hsl(rng, hb, [8, lerp(40,20,m)], [lerp(55,35,m), lerp(85,60,m)]);
-    const rotP   = lerp(0.15, 0.55, m);
-    const rot    = rng.bool(rotP) ? rng.f(-90, 90) : 0;
-    const pat    = rng.int(0, 5);
-    const r2     = new RNG(i + 777);
-    const useH   = r2.next() < m;
-    const nPool  = useH ? NOUNS_LATE : NOUNS;
-    const aPool  = useH ? ADJS_LATE  : ADJS;
-    let phrase;
-    if (pat === 0)      phrase = `${r2.pick(aPool)} ${r2.pick(nPool)}`;
-    else if (pat === 1) phrase = `the ${r2.pick(nPool)} ${r2.pick(VERBS)}`;
-    else if (pat === 2) phrase = `${r2.pick(nPool)} and ${r2.pick(nPool)}`;
-    else if (pat === 3) phrase = r2.pick(nPool);
-    else if (pat === 4) phrase = r2.pick(aPool);
-    else                phrase = `${r2.pick(nPool)} ${r2.pick(VERBS)}`;
-    return { i, type, x, y, size, op, col, rot, phrase };
-  }
-
-  if (type === 'color') {
-    const bg = hsl(rng, hb, [5, lerp(15,3,m)], [4, 10]);
-    return { i, type, bg };
-  }
-
-  // comment
   const line = new RNG(i + 9001).pick(voice(i));
   return { i, type: 'comment', line };
 }
 
-function hsl(rng, hBase, sRange, lRange) {
-  const h = ((hBase + rng.f(-25, 25)) % 360 + 360) % 360;
-  return `hsl(${h.toFixed(0)},${rng.f(...sRange).toFixed(0)}%,${rng.f(...lRange).toFixed(0)}%)`;
-}
-
-// ── Code text ─────────────────────────────────────────────────────────────────────────────────
+// ── Code text ─────────────────────────────────────────────────────────────────
 function toCode(e) {
-  if (e.type === 'shape') return (
-    `\n.e${e.i} {\n` +
-    `  position: absolute;\n` +
-    `  left: ${e.x.toFixed(1)}%;\n` +
-    `  top: ${e.y.toFixed(1)}%;\n` +
-    `  width: ${e.w.toFixed(1)}%;\n` +
-    `  height: ${e.h.toFixed(1)}%;\n` +
-    `  background: ${e.col};\n` +
-    `  border-radius: ${e.br};\n` +
-    `  opacity: ${e.op.toFixed(2)};\n` +
-    `  transform: rotate(${e.rot.toFixed(1)}deg);\n` +
-    (e.blur ? `  filter: blur(${e.blur.toFixed(1)}px);\n` : '') +
-    `}\n`
+  if (e.type === 'hero') return (
+    `<div class="site-intro">\n` +
+    `  <h1>highcake.xyz</h1>\n` +
+    `  <p class="tagline">a website that builds itself.\n  started may 2026.</p>\n` +
+    `</div>\n`
   );
-  if (e.type === 'text') return (
-    `\n.t${e.i}::before {\n` +
-    `  content: "${e.phrase}";\n` +
-    `  position: absolute;\n` +
-    `  left: ${e.x.toFixed(1)}%;\n` +
-    `  top: ${e.y.toFixed(1)}%;\n` +
-    `  font-size: ${e.size}px;\n` +
-    `  color: ${e.col};\n` +
-    `  opacity: ${e.op.toFixed(2)};\n` +
-    (e.rot ? `  transform: rotate(${e.rot.toFixed(1)}deg);\n` : '') +
-    `}\n`
-  );
-  if (e.type === 'color') return (
-    `\n/* background */\nbody {\n  background: ${e.bg};\n}\n`
-  );
+  if (e.type === 'nav') return `  <a href="#${e.label}">${e.label}</a>\n`;
+  if (e.type === 'post') {
+    const tagsStr  = e.tags.map(t => `<span class="post-tag">${t}</span>`).join(' ');
+    const parasStr = e.paras.map(p => `    <p>${p}</p>`).join('\n');
+    return (
+      `\n<article class="post" id="post-${e.i}">\n` +
+      `  <div class="post-meta">\n` +
+      `    <time datetime="${e.dateAttr}">${e.date}</time>\n` +
+      `    ${tagsStr}\n` +
+      `  </div>\n` +
+      `  <h2>${e.title}</h2>\n` +
+      `  <div class="post-body">\n` +
+      parasStr + `\n` +
+      `  </div>\n` +
+      `</article>\n`
+    );
+  }
+  if (e.type === 'style') return `#built-site { --accent: ${e.col}; }\n`;
   if (e.type === 'comment') return `\n${e.line}\n`;
   return '';
 }
 
-// ── Tokeniser (line-by-line) ─────────────────────────────────────────────────────────────────────────────
-function tokenise(code) {
+function fileFor(e) { return e.type === 'style' ? 'style.css' : 'index.html'; }
+
+// ── Tokeniser ─────────────────────────────────────────────────────────────────
+function tokenise(code, mode) {
   const out = [];
   for (const line of code.split('\n')) {
     const t = line.trim();
-    if (t.startsWith('/*')) {
-      out.push({ t: line, c: 'cm' }, { t: '\n', c: '' });
-    } else if (t.endsWith('{') || t === '}') {
-      out.push({ t: line, c: 'sel' }, { t: '\n', c: '' });
-    } else if (t.includes(':')) {
-      const ci = line.indexOf(':');
-      out.push({ t: line.slice(0, ci + 1), c: 'prop' });
-      out.push({ t: line.slice(ci + 1), c: 'val'  });
-      out.push({ t: '\n', c: '' });
+    if (!t) { out.push({ t: '\n', c: '' }); continue; }
+
+    if (mode === 'html') {
+      if (t.startsWith('<!--')) {
+        out.push({ t: line, c: 'cm' }, { t: '\n', c: '' });
+      } else if (t.startsWith('</')) {
+        out.push({ t: line, c: 'cm' }, { t: '\n', c: '' });
+      } else if (t.startsWith('<')) {
+        const m = t.match(/^<([a-z][a-z0-9]*)/i);
+        if (m) {
+          const indent = line.match(/^(\s*)/)[1];
+          const after  = t.slice(m[0].length);
+          out.push({ t: indent + '<', c: '' });
+          out.push({ t: m[1], c: 'sel' });
+          const gt = after.indexOf('>');
+          if (gt !== -1) {
+            if (gt > 0) out.push({ t: after.slice(0, gt), c: 'attr' });
+            out.push({ t: '>', c: '' });
+            if (after.slice(gt + 1)) out.push({ t: after.slice(gt + 1), c: 'val' });
+          } else {
+            out.push({ t: after, c: 'attr' });
+          }
+        } else {
+          out.push({ t: line, c: '' });
+        }
+        out.push({ t: '\n', c: '' });
+      } else {
+        out.push({ t: line + '\n', c: 'val' });
+      }
     } else {
-      out.push({ t: line + '\n', c: '' });
+      if (t.startsWith('/*') || t.startsWith('//')) {
+        out.push({ t: line, c: 'cm' }, { t: '\n', c: '' });
+      } else if (t.endsWith('{') || t === '}') {
+        out.push({ t: line, c: 'sel' }, { t: '\n', c: '' });
+      } else if (t.includes(':')) {
+        const ci = line.indexOf(':');
+        out.push({ t: line.slice(0, ci + 1), c: 'prop' });
+        out.push({ t: line.slice(ci + 1), c: 'val' });
+        out.push({ t: '\n', c: '' });
+      } else {
+        out.push({ t: line + '\n', c: '' });
+      }
     }
   }
   return out;
 }
 
-// ── DOM ────────────────────────────────────────────────────────────────────────────────────
-const canvasEl = document.getElementById('canvas');
-const codePre  = document.getElementById('code-pre');
-const edScroll = document.getElementById('ed-scroll');
-const ageBadge = document.getElementById('age-badge');
-const statusEl = document.getElementById('status');
-const cursor   = codePre.querySelector('.cur');
-
-let canvasCount = 0;
-const MAX_VISUAL = 160;
-
-// ── Canvas render ─────────────────────────────────────────────────────────────────────────────────
-function renderEntry(e, instant) {
-  if (e.type === 'color') {
-    canvasEl.style.background = e.bg;
-    return;
+// ── Blog base styles ──────────────────────────────────────────────────────────
+const BASE_CSS = `
+  #built-site {
+    --accent: #7c7c7c;
+    --border: #1a1a1a;
+    --text: #c4c4c4;
+    --muted: #555;
+    --bg: #0c0c0c;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100%;
+    font-size: 16px;
+    line-height: 1.7;
   }
-  if (e.type === 'comment') return;
-
-  if (!instant && canvasCount >= MAX_VISUAL) {
-    const oldest = canvasEl.querySelector('.shape,.word');
-    if (oldest) {
-      oldest.style.opacity = '0';
-      setTimeout(() => oldest.remove(), 2000);
-      canvasCount--;
-    }
+  #site-header {
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(12,12,12,0.95);
+    backdrop-filter: blur(8px);
+    z-index: 100;
   }
-
-  const dur = lerp(2, 7, maturity(e.i)).toFixed(1);
-
-  if (e.type === 'shape') {
-    const d = document.createElement('div');
-    d.className = 'shape' + (instant ? ' instant' : '');
-    d.style.cssText =
-      `left:${e.x.toFixed(1)}%;top:${e.y.toFixed(1)}%;` +
-      `width:${e.w.toFixed(1)}%;height:${e.h.toFixed(1)}%;` +
-      `background:${e.col};border-radius:${e.br};` +
-      `--op:${e.op.toFixed(2)};transform:rotate(${e.rot.toFixed(1)}deg);` +
-      (e.blur ? `filter:blur(${e.blur.toFixed(1)}px);` : '') +
-      (instant ? '' : `transition:opacity ${dur}s ease;`);
-    canvasEl.appendChild(d);
-    if (!instant) requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('on')));
-    canvasCount++;
+  #site-nav {
+    display: flex; gap: 1.5rem; align-items: center;
+    flex-wrap: wrap; max-width: 720px; margin: 0 auto;
   }
-
-  if (e.type === 'text') {
-    const d = document.createElement('div');
-    d.className = 'word' + (instant ? ' instant' : '');
-    d.textContent = e.phrase;
-    d.style.cssText =
-      `left:${e.x.toFixed(1)}%;top:${e.y.toFixed(1)}%;` +
-      `font-size:${e.size}px;color:${e.col};--op:${e.op.toFixed(2)};` +
-      (e.rot ? `transform:rotate(${e.rot.toFixed(1)}deg);` : '') +
-      (instant ? '' : `transition:opacity ${dur}s ease;`);
-    canvasEl.appendChild(d);
-    if (!instant) requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('on')));
-    canvasCount++;
+  #site-nav a {
+    text-decoration: none; color: var(--muted);
+    font-size: 13px; transition: color 0.15s;
   }
+  #site-nav a:hover { color: var(--text); }
+  #site-nav .logo { color: var(--text); font-weight: 600; font-size: 14px; }
+  #site-main {
+    max-width: 680px; margin: 0 auto;
+    padding: 0 2rem 6rem;
+  }
+  .site-intro {
+    padding: 5rem 0 3.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .site-intro h1 {
+    font-size: clamp(2rem, 5vw, 2.8rem);
+    font-weight: 800; letter-spacing: -0.04em;
+    color: #f0f0f0; margin-bottom: 0.8rem; line-height: 1.1;
+  }
+  .site-intro .tagline {
+    color: #444; font-size: 13px; max-width: 40ch; line-height: 1.6;
+  }
+  article.post {
+    padding: 2.8rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .post-meta {
+    display: flex; align-items: center; gap: 0.7rem;
+    margin-bottom: 0.6rem; flex-wrap: wrap;
+  }
+  time.post-date {
+    font-size: 11px; color: #3a3a3a;
+    font-family: 'SF Mono','Fira Code',monospace;
+    letter-spacing: 0.04em;
+  }
+  .post-tag {
+    font-size: 10px; color: #2e2e2e;
+    border: 1px solid #222;
+    padding: 1px 7px; border-radius: 2px;
+    font-family: monospace; letter-spacing: 0.04em;
+  }
+  article.post h2 {
+    font-size: clamp(1.1rem, 3vw, 1.45rem);
+    font-weight: 700; letter-spacing: -0.02em;
+    line-height: 1.25; color: #ddd;
+    margin-bottom: 1rem;
+  }
+  .post-body p {
+    color: var(--text); font-size: 15px;
+    line-height: 1.8; margin-bottom: 0.7rem;
+    max-width: 58ch;
+  }
+  #site-footer {
+    padding: 3rem 2rem; border-top: 1px solid var(--border);
+    text-align: center; color: #222;
+    font-size: 11px; font-family: monospace; letter-spacing: 0.06em;
+  }
+  .site-entry { animation: fadeUp 0.6s ease forwards; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+`;
+
+// ── Build site DOM ────────────────────────────────────────────────────────────
+let siteMain, siteNav, dynStyles;
+
+function initSite() {
+  const root = document.getElementById('built-site');
+
+  const style = document.createElement('style');
+  style.textContent = BASE_CSS;
+  root.appendChild(style);
+
+  dynStyles = document.createElement('style');
+  dynStyles.id = 'dyn-styles';
+  root.appendChild(dynStyles);
+
+  const header = document.createElement('header');
+  header.id = 'site-header';
+  header.innerHTML = `<nav id="site-nav"><a href="#" class="logo">highcake.xyz</a></nav>`;
+  root.appendChild(header);
+  siteNav = header.querySelector('#site-nav');
+
+  const main = document.createElement('main');
+  main.id = 'site-main';
+  root.appendChild(main);
+  siteMain = main;
+
+  const footer = document.createElement('footer');
+  footer.id = 'site-footer';
+  footer.textContent = `highcake.xyz · building since may 2026`;
+  root.appendChild(footer);
 }
 
-// ── Editor: past code ────────────────────────────────────────────────────────────────────────────────
-function injectPast(code) {
+// ── Canvas render ─────────────────────────────────────────────────────────────
+function renderEntry(e, instant) {
+  const anim = !instant;
+
+  if (e.type === 'hero') {
+    const div = document.createElement('div');
+    div.className = 'site-intro';
+    div.innerHTML =
+      `<h1>highcake.xyz</h1>` +
+      `<p class="tagline">a website that builds itself.<br>started may 2026.</p>`;
+    siteMain.appendChild(div);
+    return;
+  }
+
+  if (e.type === 'nav') {
+    const a = document.createElement('a');
+    a.href = `#${e.label}`;
+    a.textContent = e.label;
+    if (anim) a.classList.add('site-entry');
+    siteNav.appendChild(a);
+    return;
+  }
+
+  if (e.type === 'post') {
+    const art = document.createElement('article');
+    art.className = 'post' + (anim ? ' site-entry' : '');
+    art.id = `post-${e.i}`;
+
+    const meta = document.createElement('div');
+    meta.className = 'post-meta';
+    const time = document.createElement('time');
+    time.setAttribute('datetime', e.dateAttr);
+    time.className = 'post-date';
+    time.textContent = e.date;
+    meta.appendChild(time);
+    e.tags.forEach(tag => {
+      const span = document.createElement('span');
+      span.className = 'post-tag';
+      span.textContent = tag;
+      meta.appendChild(span);
+    });
+    art.appendChild(meta);
+
+    const h2 = document.createElement('h2');
+    h2.textContent = e.title;
+    art.appendChild(h2);
+
+    const body = document.createElement('div');
+    body.className = 'post-body';
+    e.paras.forEach(p => {
+      const el = document.createElement('p');
+      el.textContent = p;
+      body.appendChild(el);
+    });
+    art.appendChild(body);
+
+    siteMain.appendChild(art);
+    if (anim) scrollSite();
+    return;
+  }
+
+  if (e.type === 'style') {
+    dynStyles.textContent += `\n#built-site { --accent: ${e.col}; }\n`;
+    return;
+  }
+  // comment: no DOM change
+}
+
+function scrollSite() {
+  const site = document.getElementById('built-site');
+  site.scrollTo({ top: site.scrollHeight, behavior: 'smooth' });
+}
+
+// ── Editor ────────────────────────────────────────────────────────────────────
+const codePre  = document.getElementById('code-pre');
+const edScroll = document.getElementById('ed-scroll');
+const cursor   = codePre.querySelector('.cur');
+const fileTab  = document.getElementById('file-tab');
+
+function injectPast(code, mode) {
   const frag = document.createDocumentFragment();
-  for (const { t, c } of tokenise(code)) {
-    if (c) {
-      const s = document.createElement('span');
-      s.className = c;
-      s.textContent = t;
-      frag.appendChild(s);
-    } else {
-      frag.appendChild(document.createTextNode(t));
-    }
+  for (const { t, c } of tokenise(code, mode)) {
+    if (c) { const s = document.createElement('span'); s.className = c; s.textContent = t; frag.appendChild(s); }
+    else frag.appendChild(document.createTextNode(t));
   }
   codePre.insertBefore(frag, cursor);
 }
 
-// ── Editor: live typing ─────────────────────────────────────────────────────────────────────────────
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function typeCode(code) {
-  for (const { t, c } of tokenise(code)) {
+async function typeCode(code, mode) {
+  fileTab.textContent = mode === 'css' ? 'style.css' : 'index.html';
+  for (const { t, c } of tokenise(code, mode)) {
     let span = null;
     for (const ch of t) {
-      if (!span) {
-        span = document.createElement('span');
-        if (c) span.className = c;
-        codePre.insertBefore(span, cursor);
-      }
+      if (!span) { span = document.createElement('span'); if (c) span.className = c; codePre.insertBefore(span, cursor); }
       span.textContent += ch;
       if (ch === '\n') span = null;
       edScroll.scrollTop = edScroll.scrollHeight;
-      await sleep(Math.max(6, 46 + (Math.random() - 0.5) * 24));
+      await sleep(Math.max(6, 42 + (Math.random() - 0.5) * 20));
     }
   }
 }
 
-// ── Age display ──────────────────────────────────────────────────────────────────────────────────
+// ── Age display ───────────────────────────────────────────────────────────────
 function fmtAge(ms) {
-  const m = Math.floor(ms / 60000);
-  const d = Math.floor(m / 1440);
-  const h = Math.floor((m % 1440) / 60);
-  const s = m % 60;
+  const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), s = m % 60;
   if (d > 0) return `day ${d}, ${h}h ${s}m`;
   if (h > 0) return `${h}h ${s}m`;
   return `${s}m old`;
 }
-
 function updateMeta() {
-  const idx = epochNow();
-  const a   = age();
-  ageBadge.textContent = fmtAge(a);
-  statusEl.textContent = `entry ${idx} · ${fmtAge(a)}`;
+  const idx = epochNow(), a = age();
+  document.getElementById('age-badge').textContent = fmtAge(a);
+  document.getElementById('status').textContent = `post ${idx} · ${fmtAge(a)}`;
 }
 
-// ── Toggle editor ─────────────────────────────────────────────────────────────────────────────────
+// ── Toggle editor ─────────────────────────────────────────────────────────────
 function toggleEditor() {
   const ed  = document.querySelector('.editor');
   const btn = document.getElementById('toggle-ed');
-  const collapsed = ed.classList.toggle('collapsed');
-  btn.textContent = collapsed ? '›' : '‹';
+  btn.textContent = ed.classList.toggle('collapsed') ? '›' : '‹';
 }
 
-// ── Main ────────────────────────────────────────────────────────────────────────────────────
+// ── Main ───────────────────────────────────────────────────────────────────────
 async function main() {
+  initSite();
   updateMeta();
   setInterval(updateMeta, 30_000);
 
   const cur   = epochNow();
   const prog  = progress();
-  const limit = Math.min(cur, 6000);
+  const limit = Math.min(cur, 8000);
 
-  // Generate all past entries
   const past = [];
   for (let i = 0; i < limit; i++) past.push(entry(i));
+  past.forEach(e => renderEntry(e, true));
 
-  // Apply colour entries in full (gets correct final bg)
-  past.filter(e => e.type === 'color').forEach(e => renderEntry(e, true));
-
-  // Apply last MAX_VISUAL visual entries instantly
-  const visuals = past.filter(e => e.type === 'shape' || e.type === 'text');
-  visuals.slice(Math.max(0, visuals.length - MAX_VISUAL)).forEach(e => renderEntry(e, true));
-
-  // Inject last 60 entries into the editor
-  const CODE_HIST = 60;
-  const codeSlice = past.slice(Math.max(0, past.length - CODE_HIST));
-  let header  = `/* highcake.xyz */\n`;
-      header += `/* this has been building since it started. */\n`;
-      header += `/* it hasn't stopped. */\n`;
-  if (past.length > CODE_HIST) {
-    header += `\n/* ... ${past.length - CODE_HIST} entries before this ... */\n`;
-  }
-  injectPast(header + codeSlice.map(toCode).join(''));
+  const CODE_HIST = 50;
+  const slice     = past.slice(Math.max(0, past.length - CODE_HIST));
+  let hdr = `<!-- highcake.xyz -->\n<!-- blog, ongoing -->\n<!-- building since may 2026 -->\n`;
+  if (past.length > CODE_HIST) hdr += `\n<!-- ... ${past.length - CODE_HIST} entries before this ... -->\n`;
+  injectPast(hdr + slice.map(e => toCode(e)).join(''), 'html');
   edScroll.scrollTop = edScroll.scrollHeight;
 
-  // Live-type current entry from wherever it is mid-progress
   let next = cur;
-
   while (true) {
     const e    = entry(next);
     const code = toCode(e);
+    const mode = fileFor(e) === 'style.css' ? 'css' : 'html';
 
     if (next === cur && prog > 0) {
       const done = Math.floor(prog * code.length);
-      if (done > 0) injectPast(code.slice(0, done));
-      await typeCode(code.slice(done));
+      if (done > 0) injectPast(code.slice(0, done), mode);
+      await typeCode(code.slice(done), mode);
     } else {
-      await typeCode(code);
+      await typeCode(code, mode);
     }
 
     renderEntry(e, false);
     next++;
-
-    await sleep(900 + Math.random() * 500);
+    await sleep(800 + Math.random() * 400);
   }
 }
 
-// ── Share ─────────────────────────────────────────────────────────────────────────────────────
+// ── Share ─────────────────────────────────────────────────────────────────────
 function share() {
   navigator.clipboard.writeText(location.href).then(() => {
     const b = document.getElementById('btn-share');
-    b.textContent = 'copied.';
-    b.classList.add('ok');
+    b.textContent = 'copied.'; b.classList.add('ok');
     setTimeout(() => { b.textContent = 'share'; b.classList.remove('ok'); }, 2000);
   });
 }
