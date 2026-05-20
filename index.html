@@ -22,9 +22,10 @@
       display: flex;
       flex-direction: column;
       transition: width 0.35s ease, min-width 0.35s ease;
-      overflow: hidden;
+      overflow: visible; /* allow toggle button to remain visible when collapsed */
     }
-    .editor.collapsed { width: 0 !important; min-width: 0 !important; }
+    .editor.collapsed { width: 0 !important; min-width: 0 !important; border-right-width: 0; }
+    .editor-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
 
     #toggle-ed {
       position: absolute;
@@ -113,7 +114,8 @@
     @media (max-width: 640px) {
       .wrap { flex-direction: column; }
       .editor { width: 100% !important; min-width: 0 !important; height: 40vh; flex-shrink: 0; transition: height 0.35s ease; }
-      .editor.collapsed { height: 0 !important; width: 100% !important; }
+      .editor.collapsed { height: 0 !important; width: 100% !important; border-right-width: 1px; border-bottom-width: 0; }
+      .editor-body { overflow: hidden; }
       #toggle-ed { top: auto; right: 50%; bottom: -13px; transform: translateX(50%); }
       .editor.collapsed #toggle-ed { bottom: -26px; }
       #code-pre { font-size: 11px; }
@@ -124,15 +126,17 @@
 <div class="wrap">
   <div class="editor">
     <button id="toggle-ed" onclick="toggleEditor()" title="Toggle editor">‹</button>
-    <div class="editor-chrome">
-      <div class="traffic">
-        <span class="t-r"></span><span class="t-y"></span><span class="t-g"></span>
+    <div class="editor-body">
+      <div class="editor-chrome">
+        <div class="traffic">
+          <span class="t-r"></span><span class="t-y"></span><span class="t-g"></span>
+        </div>
+        <span class="chrome-tab" id="file-tab">index.html</span>
+        <span class="age-badge" id="age-badge"></span>
       </div>
-      <span class="chrome-tab" id="file-tab">index.html</span>
-      <span class="age-badge" id="age-badge"></span>
-    </div>
-    <div class="editor-scroll" id="ed-scroll">
-      <pre id="code-pre"><span class="cur"></span></pre>
+      <div class="editor-scroll" id="ed-scroll">
+        <pre id="code-pre"><span class="cur"></span></pre>
+      </div>
     </div>
   </div>
 
