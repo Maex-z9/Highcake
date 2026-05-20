@@ -19,6 +19,7 @@
 
     /* ── Editor ─────────────────────────────────────────────────────────────── */
     .editor {
+      position: relative;
       width: 42%;
       min-width: 280px;
       flex-shrink: 0;
@@ -26,7 +27,38 @@
       border-right: 1px solid #1c1c1c;
       display: flex;
       flex-direction: column;
+      transition: width 0.35s ease, min-width 0.35s ease;
+      overflow: hidden;
     }
+
+    .editor.collapsed {
+      width: 0 !important;
+      min-width: 0 !important;
+    }
+
+    /* Toggle button — sits on the right edge of the editor */
+    #toggle-ed {
+      position: absolute;
+      top: 50%;
+      right: -13px;
+      transform: translateY(-50%);
+      z-index: 10;
+      width: 26px;
+      height: 26px;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #555;
+      font-size: 15px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      transition: color 0.15s, border-color 0.15s, right 0.35s ease;
+    }
+    #toggle-ed:hover { color: #999; border-color: #444; }
+    .editor.collapsed #toggle-ed { right: -26px; }
 
     .editor-chrome {
       background: #141414;
@@ -36,6 +68,7 @@
       align-items: center;
       gap: 10px;
       flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .traffic { display: flex; gap: 5px; }
@@ -85,7 +118,6 @@
     .sel  { color: #c678dd; }
     .prop { color: #61afef; }
     .val  { color: #98c379; }
-    .punc { color: #abb2bf; }
 
     .cur {
       display: inline-block;
@@ -114,14 +146,14 @@
       transition: background 12s ease;
     }
 
+    /* No CSS transition — set dynamically per-element based on maturity */
     .shape {
       position: absolute;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 2s ease;
     }
-    .shape.on { opacity: var(--op, 0.2); }
-    .shape.instant { opacity: var(--op, 0.2); transition: none; }
+    .shape.on      { opacity: var(--op, 0.2); }
+    .shape.instant { opacity: var(--op, 0.2); }
 
     .word {
       position: absolute;
@@ -130,10 +162,9 @@
       letter-spacing: 0.06em;
       white-space: nowrap;
       opacity: 0;
-      transition: opacity 3s ease;
     }
-    .word.on { opacity: var(--op, 0.4); }
-    .word.instant { opacity: var(--op, 0.4); transition: none; }
+    .word.on      { opacity: var(--op, 0.4); }
+    .word.instant { opacity: var(--op, 0.4); }
 
     .canvas-footer {
       padding: 8px 14px;
@@ -169,10 +200,23 @@
 
     /* ── Mobile ──────────────────────────────────────────────────────────────── */
     @media (max-width: 640px) {
-      .wrap         { flex-direction: column; }
-      .editor       { width: 100%; min-width: 0; height: 42vh; flex-shrink: 0; }
-      .canvas       { flex: 1; }
-      #code-pre     { font-size: 11px; }
+      .wrap   { flex-direction: column; }
+      .editor {
+        width: 100% !important;
+        min-width: 0 !important;
+        height: 42vh;
+        flex-shrink: 0;
+        transition: height 0.35s ease;
+      }
+      .editor.collapsed { height: 0 !important; width: 100% !important; }
+      #toggle-ed {
+        top: auto;
+        right: 50%;
+        bottom: -13px;
+        transform: translateX(50%);
+      }
+      .editor.collapsed #toggle-ed { bottom: -26px; right: 50%; }
+      #code-pre { font-size: 11px; }
     }
   </style>
 </head>
@@ -180,6 +224,7 @@
 <div class="wrap">
 
   <div class="editor">
+    <button id="toggle-ed" onclick="toggleEditor()" title="Toggle editor">‹</button>
     <div class="editor-chrome">
       <div class="traffic">
         <span class="t-r"></span>
@@ -204,7 +249,7 @@
 
 </div>
 <script>
-// ── RNG ───────────────────────────────────────────────────────────────────────
+// ── RNG ────────────────────────────────────────────────────────────────────────────────
 class RNG {
   constructor(seed) { this.s = (seed ^ 0x9e3779b9) >>> 0 || 1; }
   next() {
@@ -219,7 +264,11 @@ class RNG {
   bool(p = 0.5) { return this.next() < p; }
 }
 
-// ── Timing ────────────────────────────────────────────────────────────────────
+// ── Maturity ──────────────────────────────────────────────────────────────────────────────
+const lerp     = (a, b, t) => a + (b - a) * t;
+const maturity = i => Math.min(1, i / 1000); // fully aged after ~2 days
+
+// ── Timing ────────────────────────────────────────────────────────────────────────────────
 const BIRTHDAY = new Date('2026-05-20T00:00:00Z').getTime();
 const EPOCH    = 3 * 60 * 1000; // 3 min per entry
 
@@ -227,13 +276,18 @@ function age()     { return Date.now() - BIRTHDAY; }
 function epochNow(){ return Math.floor(age() / EPOCH); }
 function progress(){ return (age() % EPOCH) / EPOCH; }
 
-// ── Word pools ────────────────────────────────────────────────────────────────
+// ── Word pools ──────────────────────────────────────────────────────────────────────────────
 const NOUNS = [
   'signal','edge','weight','distance','surface','interval','threshold',
   'remainder','residue','volume','duration','absence','presence','gap',
   'fold','grain','current','layer','depth','margin','trace','fragment',
   'echo','drift','field','boundary','pattern','accumulation','silence',
-  'interval','pressure','form','density','void'
+  'pressure','form','density','void'
+];
+const NOUNS_LATE = [
+  'void','mass','collapse','erasure','sediment','compression','obscurity',
+  'inertia','stasis','ruin','gravity','end','remainder','weight',
+  'dissolution','absence','silence','density','pressure','nothing'
 ];
 const VERBS = [
   'persists','accumulates','settles','shifts','arrives','remains',
@@ -245,8 +299,13 @@ const ADJS = [
   'partial','slow','dense','quiet','dim','gradual','persistent',
   'flat','hollow','thin','diffuse','total','suspended','ambient'
 ];
+const ADJS_LATE = [
+  'total','collapsed','opaque','heavy','inert','irreversible',
+  'exhausted','final','absolute','compressed','empty','gone',
+  'still','dark','slow','dense'
+];
 
-// ── Voices ────────────────────────────────────────────────────────────────────
+// ── Voices ────────────────────────────────────────────────────────────────────────────────
 const V = {
   early: [
     '/* okay. */',
@@ -287,56 +346,81 @@ const V = {
     '/* i wonder if this is visible. */',
     '/* it was simpler at the start. */',
   ],
+  ancient: [
+    '/* . */',
+    '/* still. */',
+    '/* the weight of it. */',
+    '/* density is a kind of presence. */',
+    '/* i was here before you arrived. */',
+    '/* it has been a long time. */',
+    '/* i remember starting. barely. */',
+    '/* always. */',
+    '/* i don\'t know what this is anymore. */',
+    '/* it accumulates. */',
+    '/* . */',
+    '/* heavy. */',
+  ],
 };
 
 function voice(idx) {
+  if (idx > 400) return V.ancient;
   if (idx < 20)  return V.early;
   if (idx < 120) return V.mid;
   return V.late;
 }
 
-// ── Entry generation ──────────────────────────────────────────────────────────
-const TYPES = ['shape','shape','shape','text','text','color','comment','comment'];
+// ── Entry generation ──────────────────────────────────────────────────────────────────────────────
+const TYPES    = ['shape','shape','shape','text','text','color','comment','comment'];
+const BR_YOUNG = ['0','50%','4px','40% 60% 60% 40% / 40% 40% 60% 60%','2px'];
+const BR_OLD   = ['0','2px','4px','0','2px'];
 
 function entry(i) {
   const rng  = new RNG(i + 1);
   const type = i === 0 ? 'color' : rng.pick(TYPES);
   const hb   = (i * 13.7) % 360;
+  const m    = maturity(i);
 
   if (type === 'shape') {
-    const x   = rng.f(2, 88);
-    const y   = rng.f(2, 88);
-    const w   = rng.f(3, 30);
-    const h   = rng.f(3, 30);
-    const br  = rng.pick(['0','50%','4px','40% 60% 60% 40% / 40% 40% 60% 60%','2px']);
-    const op  = rng.f(0.04, 0.32);
-    const rot = rng.f(-50, 50);
-    const col = hsl(rng, hb, [12,60], [22,62]);
-    const blur= rng.bool(0.22) ? rng.f(3,18) : 0;
+    const x      = rng.f(2, 88);
+    const y      = rng.f(2, 88);
+    const w      = rng.f(lerp(3,  8, m), lerp(30, 65, m));
+    const h      = rng.f(lerp(3,  8, m), lerp(30, 65, m));
+    const brIdx  = Math.floor(rng.next() * 5);
+    const br     = (m > 0.5 ? BR_OLD : BR_YOUNG)[brIdx];
+    const op     = rng.f(lerp(0.04, 0.10, m), lerp(0.32, 0.55, m));
+    const rotMax = lerp(50, 85, m);
+    const rot    = rng.f(-rotMax, rotMax);
+    const col    = hsl(rng, hb, [lerp(12,5,m), lerp(60,18,m)], [lerp(22,8,m), lerp(62,32,m)]);
+    const blurP  = lerp(0.22, 0.60, m);
+    const blur   = rng.bool(blurP) ? rng.f(3, lerp(18, 30, m)) : 0;
     return { i, type, x, y, w, h, br, op, rot, col, blur };
   }
 
   if (type === 'text') {
-    const x     = rng.f(2, 75);
-    const y     = rng.f(3, 92);
-    const size  = rng.int(9, 20);
-    const op    = rng.f(0.08, 0.5);
-    const col   = hsl(rng, hb, [8,40], [55,85]);
-    const rot   = rng.bool(0.15) ? rng.f(-90, 90) : 0;
-    const pat   = rng.int(0, 5);
+    const x      = rng.f(2, 75);
+    const y      = rng.f(3, 92);
+    const size   = rng.int(Math.round(lerp(9,7,m)), Math.round(lerp(20,30,m)));
+    const op     = rng.f(lerp(0.08,0.12,m), lerp(0.50,0.65,m));
+    const col    = hsl(rng, hb, [8, lerp(40,20,m)], [lerp(55,35,m), lerp(85,60,m)]);
+    const rotP   = lerp(0.15, 0.55, m);
+    const rot    = rng.bool(rotP) ? rng.f(-90, 90) : 0;
+    const pat    = rng.int(0, 5);
+    const r2     = new RNG(i + 777);
+    const useH   = r2.next() < m;
+    const nPool  = useH ? NOUNS_LATE : NOUNS;
+    const aPool  = useH ? ADJS_LATE  : ADJS;
     let phrase;
-    const r2 = new RNG(i + 777);
-    if (pat === 0)      phrase = `${r2.pick(ADJS)} ${r2.pick(NOUNS)}`;
-    else if (pat === 1) phrase = `the ${r2.pick(NOUNS)} ${r2.pick(VERBS)}`;
-    else if (pat === 2) phrase = `${r2.pick(NOUNS)} and ${r2.pick(NOUNS)}`;
-    else if (pat === 3) phrase = r2.pick(NOUNS);
-    else if (pat === 4) phrase = r2.pick(ADJS);
-    else                phrase = `${r2.pick(NOUNS)} ${r2.pick(VERBS)}`;
+    if (pat === 0)      phrase = `${r2.pick(aPool)} ${r2.pick(nPool)}`;
+    else if (pat === 1) phrase = `the ${r2.pick(nPool)} ${r2.pick(VERBS)}`;
+    else if (pat === 2) phrase = `${r2.pick(nPool)} and ${r2.pick(nPool)}`;
+    else if (pat === 3) phrase = r2.pick(nPool);
+    else if (pat === 4) phrase = r2.pick(aPool);
+    else                phrase = `${r2.pick(nPool)} ${r2.pick(VERBS)}`;
     return { i, type, x, y, size, op, col, rot, phrase };
   }
 
   if (type === 'color') {
-    const bg = hsl(rng, hb, [5,15], [4,10]);
+    const bg = hsl(rng, hb, [5, lerp(15,3,m)], [4, 10]);
     return { i, type, bg };
   }
 
@@ -350,7 +434,7 @@ function hsl(rng, hBase, sRange, lRange) {
   return `hsl(${h.toFixed(0)},${rng.f(...sRange).toFixed(0)}%,${rng.f(...lRange).toFixed(0)}%)`;
 }
 
-// ── Code text ─────────────────────────────────────────────────────────────────
+// ── Code text ─────────────────────────────────────────────────────────────────────────────────
 function toCode(e) {
   if (e.type === 'shape') return (
     `\n.e${e.i} {\n` +
@@ -385,7 +469,7 @@ function toCode(e) {
   return '';
 }
 
-// ── Tokeniser (line-by-line) ───────────────────────────────────────────────────
+// ── Tokeniser (line-by-line) ─────────────────────────────────────────────────────────────────────────────
 function tokenise(code) {
   const out = [];
   for (const line of code.split('\n')) {
@@ -406,18 +490,18 @@ function tokenise(code) {
   return out;
 }
 
-// ── DOM ────────────────────────────────────────────────────────────────────────
-const canvasEl  = document.getElementById('canvas');
-const codePre   = document.getElementById('code-pre');
-const edScroll  = document.getElementById('ed-scroll');
-const ageBadge  = document.getElementById('age-badge');
-const statusEl  = document.getElementById('status');
-const cursor    = codePre.querySelector('.cur');
+// ── DOM ────────────────────────────────────────────────────────────────────────────────────
+const canvasEl = document.getElementById('canvas');
+const codePre  = document.getElementById('code-pre');
+const edScroll = document.getElementById('ed-scroll');
+const ageBadge = document.getElementById('age-badge');
+const statusEl = document.getElementById('status');
+const cursor   = codePre.querySelector('.cur');
 
 let canvasCount = 0;
 const MAX_VISUAL = 160;
 
-// ── Canvas render ─────────────────────────────────────────────────────────────
+// ── Canvas render ─────────────────────────────────────────────────────────────────────────────────
 function renderEntry(e, instant) {
   if (e.type === 'color') {
     canvasEl.style.background = e.bg;
@@ -425,11 +509,16 @@ function renderEntry(e, instant) {
   }
   if (e.type === 'comment') return;
 
-  // Evict oldest if over limit
   if (!instant && canvasCount >= MAX_VISUAL) {
     const oldest = canvasEl.querySelector('.shape,.word');
-    if (oldest) { oldest.style.opacity = '0'; setTimeout(() => oldest.remove(), 2000); canvasCount--; }
+    if (oldest) {
+      oldest.style.opacity = '0';
+      setTimeout(() => oldest.remove(), 2000);
+      canvasCount--;
+    }
   }
+
+  const dur = lerp(2, 7, maturity(e.i)).toFixed(1);
 
   if (e.type === 'shape') {
     const d = document.createElement('div');
@@ -439,7 +528,8 @@ function renderEntry(e, instant) {
       `width:${e.w.toFixed(1)}%;height:${e.h.toFixed(1)}%;` +
       `background:${e.col};border-radius:${e.br};` +
       `--op:${e.op.toFixed(2)};transform:rotate(${e.rot.toFixed(1)}deg);` +
-      (e.blur ? `filter:blur(${e.blur.toFixed(1)}px);` : '');
+      (e.blur ? `filter:blur(${e.blur.toFixed(1)}px);` : '') +
+      (instant ? '' : `transition:opacity ${dur}s ease;`);
     canvasEl.appendChild(d);
     if (!instant) requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('on')));
     canvasCount++;
@@ -452,14 +542,15 @@ function renderEntry(e, instant) {
     d.style.cssText =
       `left:${e.x.toFixed(1)}%;top:${e.y.toFixed(1)}%;` +
       `font-size:${e.size}px;color:${e.col};--op:${e.op.toFixed(2)};` +
-      (e.rot ? `transform:rotate(${e.rot.toFixed(1)}deg);` : '');
+      (e.rot ? `transform:rotate(${e.rot.toFixed(1)}deg);` : '') +
+      (instant ? '' : `transition:opacity ${dur}s ease;`);
     canvasEl.appendChild(d);
     if (!instant) requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add('on')));
     canvasCount++;
   }
 }
 
-// ── Editor: past code ─────────────────────────────────────────────────────────
+// ── Editor: past code ────────────────────────────────────────────────────────────────────────────────
 function injectPast(code) {
   const frag = document.createDocumentFragment();
   for (const { t, c } of tokenise(code)) {
@@ -475,7 +566,7 @@ function injectPast(code) {
   codePre.insertBefore(frag, cursor);
 }
 
-// ── Editor: live typing ───────────────────────────────────────────────────────
+// ── Editor: live typing ─────────────────────────────────────────────────────────────────────────────
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function typeCode(code) {
@@ -495,14 +586,14 @@ async function typeCode(code) {
   }
 }
 
-// ── Age display ────────────────────────────────────────────────────────────────
+// ── Age display ──────────────────────────────────────────────────────────────────────────────────
 function fmtAge(ms) {
   const m = Math.floor(ms / 60000);
   const d = Math.floor(m / 1440);
   const h = Math.floor((m % 1440) / 60);
   const s = m % 60;
-  if (d > 0) return `day ${d}, ${h}h ${s}m`;
-  if (h > 0) return `${h}h ${s}m`;
+  if (d > 0) return `day ${d}, ${h}h ${s}m`;
+  if (h > 0) return `${h}h ${s}m`;
   return `${s}m old`;
 }
 
@@ -513,7 +604,15 @@ function updateMeta() {
   statusEl.textContent = `entry ${idx} · ${fmtAge(a)}`;
 }
 
-// ── Main ───────────────────────────────────────────────────────────────────────
+// ── Toggle editor ─────────────────────────────────────────────────────────────────────────────────
+function toggleEditor() {
+  const ed  = document.querySelector('.editor');
+  const btn = document.getElementById('toggle-ed');
+  const collapsed = ed.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '›' : '‹';
+}
+
+// ── Main ────────────────────────────────────────────────────────────────────────────────────
 async function main() {
   updateMeta();
   setInterval(updateMeta, 30_000);
@@ -526,14 +625,14 @@ async function main() {
   const past = [];
   for (let i = 0; i < limit; i++) past.push(entry(i));
 
-  // Apply colour entries in full (correct final bg)
+  // Apply colour entries in full (gets correct final bg)
   past.filter(e => e.type === 'color').forEach(e => renderEntry(e, true));
 
   // Apply last MAX_VISUAL visual entries instantly
   const visuals = past.filter(e => e.type === 'shape' || e.type === 'text');
   visuals.slice(Math.max(0, visuals.length - MAX_VISUAL)).forEach(e => renderEntry(e, true));
 
-  // Inject last 60 entries into the editor (preceded by header)
+  // Inject last 60 entries into the editor
   const CODE_HIST = 60;
   const codeSlice = past.slice(Math.max(0, past.length - CODE_HIST));
   let header  = `/* highcake.xyz */\n`;
@@ -545,7 +644,7 @@ async function main() {
   injectPast(header + codeSlice.map(toCode).join(''));
   edScroll.scrollTop = edScroll.scrollHeight;
 
-  // Live-type current entry (from wherever it is mid-progress)
+  // Live-type current entry from wherever it is mid-progress
   let next = cur;
 
   while (true) {
@@ -553,7 +652,6 @@ async function main() {
     const code = toCode(e);
 
     if (next === cur && prog > 0) {
-      // Skip already-elapsed portion, inject it instantly
       const done = Math.floor(prog * code.length);
       if (done > 0) injectPast(code.slice(0, done));
       await typeCode(code.slice(done));
@@ -564,12 +662,11 @@ async function main() {
     renderEntry(e, false);
     next++;
 
-    // Breathe between entries
     await sleep(900 + Math.random() * 500);
   }
 }
 
-// ── Share ─────────────────────────────────────────────────────────────────────
+// ── Share ─────────────────────────────────────────────────────────────────────────────────────
 function share() {
   navigator.clipboard.writeText(location.href).then(() => {
     const b = document.getElementById('btn-share');
