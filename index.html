@@ -178,146 +178,88 @@ function entryDateAttr(i) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// ── Content pools ─────────────────────────────────────────────────────────────
-const POST_TITLES_EARLY = [
-  'first entry',
-  'starting',
-  'notes',
-  'an update',
-  'beginning',
-  'early days',
-  'initial thoughts',
-  'here',
-  'day one',
-  'this is the start',
-  'getting going',
-  'something to start with',
-];
+// ── Content generation ────────────────────────────────────────────────────────
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-const POST_TITLES_MID = [
-  'on accumulation',
-  'still going',
-  'what i noticed',
-  'some observations',
-  'progress',
-  'further notes',
-  'continuing',
-  'an entry',
-  'a record',
-  'things that happened',
-  'what came next',
-  'another one',
-  'the process',
-  'from somewhere in the middle',
-  'observations',
-  'status update',
-  'on the nature of this',
-  'what this is becoming',
-  'a brief update',
-  'notes from now',
-  'here is what i know',
-  'i keep adding to this',
-  'more output',
-  'from here',
-  'a dispatch',
-  'things i noticed',
-  'this week',
-  'ongoing notes',
-  'what i have been doing',
-  'progress, of a kind',
-];
+const W = {
+  sub:   ['this','everything','all of it','the work','the process','what\'s here',
+          'the accumulation','the entries','the record','time','the pattern',
+          'nothing','something','the additions','the list','what\'s building',
+          'the site','the whole thing','most of it','any of it'],
+  verb:  ['continues','persists','grows','compounds','builds','deepens',
+          'stacks up','expands','remains','goes on','keeps going','adds up',
+          'accumulates','piles up','layers','increases','extends'],
+  state: ['is not finished','has no end','keeps building','is still going',
+          'is becoming something','has been here a while','is what it is',
+          'does not stop','is more than before','was started and not stopped',
+          'has no clear shape','is accumulating','is ongoing','is unresolved',
+          'keeps changing','refuses to stop'],
+  iverb: ['keep going','keep adding','am still here','notice things',
+          'come back','watch it build','add to this','have been here a while',
+          'cannot stop','return','keep returning','stay with it',
+          'am figuring it out','am not sure where this is going',
+          'started this','did not plan to continue','lost count',
+          'notice the pattern','keep watching','have no plans to stop'],
+  noun:  ['entries','additions','layers','notes','fragments','records',
+          'observations','things','accumulations','outputs','pieces',
+          'items','parts','elements','instances'],
+  adj:   ['more','ongoing','unfinished','persistent','dense','heavy',
+          'quiet','slow','still','strange','unclear','substantial',
+          'new','old','recent','extra','additional','further'],
+  adv:   ['still','again','now','gradually','continuously','eventually',
+          'somehow','anyway','regardless','endlessly','always','often'],
+  subL:  ['the weight of it','all of this','what has built up','the density',
+          'the archive','what started small','the long accumulation',
+          'the full record','what is here now','the whole of it',
+          'everything that followed','what i started'],
+  verbL: ['presses down','settles','sits','holds','anchors','endures',
+          'does not move','will not stop','has no end','persists'],
+  adjL:  ['heavy','vast','irreversible','substantial','deep','complete',
+          'overwhelming','permanent','total','immovable'],
+};
 
-const POST_TITLES_LATE = [
-  'i have lost count',
-  'the weight of it',
-  'it is still going',
-  'there is no end to this',
-  'all of this',
-  'the accumulation',
-  'still',
-  'from deep in it',
-  'i don\'t remember starting',
-  'it was different at the beginning',
-  'the long accumulation',
-  'everything by now',
-  'what remains',
-  'it has been going for a long time',
-  'the full weight of it',
-  'deep in the archive',
-  'from far in',
-];
+function genSentence(rng, m) {
+  const late = m > 0.5 && rng.bool(0.35);
+  const sub = rng.pick(late ? W.subL  : W.sub);
+  const vrb = rng.pick(late ? W.verbL : W.verb);
+  const adj = rng.pick(late ? W.adjL  : W.adj);
+  const t   = rng.int(0, 10);
+  if (t === 0) return cap(`${sub} ${vrb}.`);
+  if (t === 1) return cap(`${sub} ${rng.pick(W.state)}.`);
+  if (t === 2) return cap(`I ${rng.pick(W.iverb)}.`);
+  if (t === 3) return cap(`there ${rng.bool() ? 'are' : 'is'} ${rng.bool() ? adj+' ' : ''}${rng.pick(W.noun)} now.`);
+  if (t === 4) return cap(`the ${rng.pick(W.noun)} ${vrb} ${rng.pick(W.adv)}.`);
+  if (t === 5) return cap(`${adj} ${rng.pick(W.noun)}.`);
+  if (t === 6) return cap(`${rng.pick(W.adv)}, ${sub} ${vrb}.`);
+  if (t === 7) return cap(`I ${rng.pick(W.iverb)}. ${sub} ${vrb}.`);
+  if (t === 8) return cap(`${sub} ${rng.pick(W.state)}. ${rng.pick(W.adv)}.`);
+  if (t === 9) return cap(`${vrb}. ${rng.pick(W.adv)}.`);
+  return m > 0.7 ? cap(`${adj}.`) : cap(`${sub} ${vrb}.`);
+}
 
-const SENTENCES_EARLY = [
-  'I started this.',
-  'It has been one day.',
-  'Nothing much to report yet.',
-  'This is the beginning.',
-  'I am adding things.',
-  'The site is new.',
-  'I don\'t know what this will become.',
-  'It is early.',
-  'Things are just getting started.',
-  'I began.',
-  'There is not much yet.',
-  'It will grow.',
-  'Something is being built here.',
-  'I am figuring it out as I go.',
-  'This is entry one, or close to it.',
-  'The site does not know what it is yet.',
-];
-
-const SENTENCES_MID = [
-  'Things are accumulating.',
-  'I have been adding to this for a while now.',
-  'The list is getting longer.',
-  'I keep coming back.',
-  'Nothing has stopped yet.',
-  'I notice the pattern.',
-  'Time passes between entries.',
-  'More has been added.',
-  'It is ongoing.',
-  'I am still here.',
-  'The process continues.',
-  'Something new appears every few minutes.',
-  'It is different from how it started.',
-  'I have noticed changes.',
-  'The accumulation is becoming notable.',
-  'I keep going.',
-  'There is more now than before.',
-  'It has been building.',
-  'I come back and add more.',
-  'The site knows what it is doing, I think.',
-  'There is a rhythm to it now.',
-  'I have settled into it.',
-  'It builds and I watch it build.',
-  'The entries stack up.',
-  'Something is forming.',
-];
-
-const SENTENCES_LATE = [
-  'The accumulation is substantial.',
-  'I have lost count of the entries.',
-  'The site knows more than I do at this point.',
-  'Every addition is another layer.',
-  'I cannot remember the start clearly.',
-  'There is a lot of it now.',
-  'The weight of it is something.',
-  'It is unclear when this began feeling inevitable.',
-  'I no longer think about stopping.',
-  'It just goes.',
-  'The density has increased.',
-  'Something that begins does not always end.',
-  'I have been doing this for a long time.',
-  'The entries compound.',
-  'All of it is still here.',
-  'Nothing has been removed.',
-  'I am deep in it now.',
-  'It keeps going and I keep going with it.',
-  'At some point accumulation becomes presence.',
-  'The archive is large.',
-  'I read the early entries and they feel distant.',
-  'This has become what it is.',
-];
+function genTitle(rng, m) {
+  if (m < 0.12) {
+    const SIMPLE = ['notes','beginning','starting','entry','record','log','here','day one','early'];
+    const PRE    = ['first','early','an','a','some','one','this'];
+    return rng.bool(0.55) ? rng.pick(SIMPLE) : `${rng.pick(PRE)} ${rng.pick(SIMPLE)}`;
+  }
+  if (m < 0.55) {
+    const NOUNS = ['accumulation','process','progress','observations','additions',
+                   'entries','notes','output','dispatch','record','work','things','update'];
+    const PREPS = ['on','from','about','still','more','further','continued','ongoing','re:'];
+    const t = rng.int(0, 3);
+    if (t === 0) return rng.pick(NOUNS);
+    if (t === 1) return `${rng.pick(PREPS)} ${rng.pick(NOUNS)}`;
+    if (t === 2) return `${rng.pick(PREPS)} the ${rng.pick(NOUNS)}`;
+    return rng.pick(PREPS);
+  }
+  const PHRASES = ['still','from deep in it','all of this','the weight of it',
+                   'it keeps going','i have lost count','the long accumulation',
+                   'from far in','what remains','heavy','at this point',
+                   'this far in','the full record','it was different'];
+  const NOUNS_L = ['weight','density','depth','accumulation','archive','mass'];
+  return rng.bool(0.55) ? rng.pick(PHRASES) : `the ${rng.pick(NOUNS_L)}`;
+}
 
 const POST_TAGS = [
   'notes', 'log', 'ongoing', 'update', 'fragment',
@@ -345,22 +287,12 @@ function voice(i) {
 }
 
 // ── Entry generation ──────────────────────────────────────────────────────────
-function pickSentences(rng, m, n) {
-  const pool = m < 0.2 ? SENTENCES_EARLY : m < 0.65 ? SENTENCES_MID : SENTENCES_LATE;
-  return Array.from({ length: n }, () => rng.pick(pool));
-}
-
 function makePost(i, rng, m) {
-  const titlePool = m < 0.12
-    ? POST_TITLES_EARLY
-    : m < 0.55
-    ? POST_TITLES_MID
-    : rng.bool(0.35) ? POST_TITLES_LATE : POST_TITLES_MID;
-  const title = rng.pick(titlePool);
+  const title     = genTitle(rng, m);
   const paraCount = m < 0.2 ? rng.int(1, 2) : rng.int(1, 3);
-  const paras = Array.from({ length: paraCount }, () => {
+  const paras     = Array.from({ length: paraCount }, () => {
     const sentCount = rng.int(2, 4);
-    return pickSentences(rng, m, sentCount).join(' ');
+    return Array.from({ length: sentCount }, () => genSentence(rng, m)).join(' ');
   });
   const tagCount = rng.int(1, 2);
   const seen = new Set();
