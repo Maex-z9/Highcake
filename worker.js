@@ -63,7 +63,7 @@ Decide what to do. Return exactly ONE of:
     if (!match) return new Response('parse error', { status: 502, headers: CORS });
 
     let data;
-    try { data = JSON.parse(match[0]); } catch { return new Response('json error', { status: 502, headers: CORS }); }
+    try { data = JSON.parse(match[0]); } catch (e) { return new Response('json error', { status: 502, headers: CORS }); }
 
     let entry;
     if (data.type === 'css') {
