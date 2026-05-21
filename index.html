@@ -35,16 +35,50 @@
     }
     .btn-share:hover { color: #666; border-color: #333; }
     .btn-share.ok { color: #4ade80; border-color: #4ade80; }
+
+    /* ── AI loading overlay ───────────────────────────────────────────────────── */
+    #ai-overlay {
+      position: fixed; inset: 0;
+      background: #090909;
+      display: none;
+      align-items: center; justify-content: center;
+      z-index: 1000;
+    }
+    #ai-overlay.visible { display: flex; }
+    .ai-box {
+      font-family: 'SF Mono','Fira Code',monospace;
+      text-align: center;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    .ai-label { font-size: 11px; color: #444; letter-spacing: 0.08em; }
+    .ai-model { font-size: 10px; color: #2a2a2a; }
+    .ai-bar-wrap { width: 220px; height: 1px; background: #1a1a1a; margin: 0 auto; }
+    .ai-bar { height: 100%; background: #3a3a3a; width: 0; transition: width 0.4s ease; }
+    .ai-pct { font-size: 10px; color: #333; }
+    .ai-status { font-size: 9px; color: #222; max-width: 260px; margin: 0 auto; min-height: 1em; }
   </style>
 </head>
 <body>
+
+<div id="ai-overlay">
+  <div class="ai-box">
+    <div class="ai-label">loading local ai</div>
+    <div class="ai-model">phi-3 mini · ~2gb · downloads once, runs here forever</div>
+    <div class="ai-bar-wrap"><div id="ai-bar" class="ai-bar"></div></div>
+    <div id="ai-pct" class="ai-pct">0%</div>
+    <div id="ai-status" class="ai-status"></div>
+  </div>
+</div>
+
 <div id="built-site"></div>
 <div class="site-bar">
   <span class="status" id="status"></span>
-  <button class="btn-share" id="btn-share" onclick="share()">share</button>
+  <button class="btn-share" id="btn-share" onclick="window._share()">share</button>
 </div>
 
-<script>
+<script type="module">
+import * as webllm from "https://esm.run/@mlc-ai/web-llm";
+
 // ── RNG ───────────────────────────────────────────────────────────────────────
 class RNG {
   constructor(seed) { this.s = (seed ^ 0x9e3779b9) >>> 0 || 1; }
@@ -55,7 +89,7 @@ class RNG {
   bool(p = 0.5) { return this.next() < p; }
 }
 
-// ── Maturity & timing ─────────────────────────────────────────────────────────
+// ── Timing ────────────────────────────────────────────────────────────────────
 const lerp     = (a, b, t) => a + (b - a) * t;
 const maturity = i => Math.min(1, i / 1000);
 const BIRTHDAY = new Date('2026-05-20T00:00:00Z').getTime();
@@ -72,32 +106,11 @@ function entryDateAttr(i) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// ── Content pools ─────────────────────────────────────────────────────────────
+// ── Fallback content pools ────────────────────────────────────────────────────
 const TITLES = {
-  early: [
-    'notes', 'starting', 'day one', 'first entry', 'here',
-    'beginning', 'an entry', 'okay', 'this is it', 'a record',
-    'early', 'a start', 'just beginning', 'something', 'entry',
-    'first notes', 'from the start', 'initial', 'hello',
-  ],
-  mid: [
-    'accumulation', 'update', 'still going', 'progress', 'observations',
-    'it has been a while', 'something is happening', 'notes from here',
-    'ongoing', 'building', 'dispatch', 'from the middle',
-    'further along', 'the process', 'notes on accumulation',
-    'more of this', 'deeper in', 'a few things', 'report',
-    'from inside it', 'in progress', 'current state',
-    'checkpoint', 'the count', 'still here',
-  ],
-  late: [
-    'the weight of it', 'still', 'from far in', 'all of this',
-    'density', 'heavy', 'it keeps going', 'what it became',
-    'the long accumulation', 'what remains', 'at this point',
-    'this far in', 'the full record', 'irreversible',
-    'the archive', 'it was different at the start', 'the whole of it',
-    'mass', 'still going', 'deep in', 'after all this',
-    'the distance', 'duration', 'from the archive',
-  ],
+  early: ['notes','starting','day one','first entry','here','beginning','an entry','okay','a record','early','a start','something','first notes','initial','hello'],
+  mid:   ['accumulation','update','still going','progress','observations','it has been a while','ongoing','building','dispatch','from the middle','further along','the process','more of this','deeper in','a few things','report','in progress','current state','checkpoint','still here'],
+  late:  ['the weight of it','still','from far in','all of this','density','heavy','it keeps going','what it became','the long accumulation','what remains','at this point','this far in','the full record','irreversible','the archive','the whole of it','mass','still going','deep in','after all this','duration'],
 };
 
 const PARAS = {
@@ -114,11 +127,9 @@ const PARAS = {
     "I wanted a place that built itself. So I made one.",
     "Empty at first. That changes.",
     "The beginning of something feels light. There's nothing to carry yet.",
-    "I've been wanting to build something like this for a while. Here it is.",
     "Every three minutes this site adds a new entry. This is one of the first.",
     "A record of the thing existing. That's enough for now.",
     "I don't have a finished version of this in mind. That's intentional.",
-    "It's just started. Come back later.",
     "Small at first. That changes.",
     "I built this because I didn't want to build something that was ever finished. Here's the start of that.",
     "No plan beyond: keep going. That might be enough.",
@@ -137,24 +148,12 @@ const PARAS = {
     "It was much simpler at the start. Not worse — just smaller, like it hadn't grown into itself yet.",
     "I like that it doesn't stop. Most things have endings built in. This one doesn't.",
     "The archive grows. That's all it does. That turns out to be enough.",
-    "I check in on it the way you'd check on something growing in a window. Slow, steady, certain.",
     "There's something satisfying about a thing that just keeps adding to itself. No drama. No conclusion.",
     "Someone asked me what this is. I said it's a website that grows. They asked grows into what. I said I don't know yet. That was the honest answer.",
-    "I'm not sure when the tone shifted. Somewhere in the middle it started taking itself more seriously. I let it.",
     "The entries stack up. You stop noticing each one individually and start seeing the whole mass of them.",
-    "There are hours I don't look at it. It still builds. That's the design. It still feels like something every time I come back.",
-    "I think about it differently now than I did at the start. The thing that seemed small started seeming significant.",
-    "It's not a diary. Not a blog in any usual sense. It's more like a machine that watches itself run.",
-    "People have found this somehow. It keeps building regardless.",
-    "The fact that it's automatic doesn't make it feel less real. If anything the opposite.",
-    "Somewhere around here the count stopped being small. I stopped being able to picture the whole thing at once.",
     "Every three minutes. Whether I'm here or not. The site adds an entry and moves on.",
     "I built this to outlast my attention span. That was a real concern. It worked.",
-    "The entries are consistent. The format doesn't change. The count just grows. That's the whole logic.",
     "There's more of it than there used to be. That simple fact is kind of the whole point.",
-    "I've started describing it to people as: a website that makes itself. That's accurate.",
-    "I revisit old entries sometimes. They feel settled, like they've found their place in the order of things.",
-    "The count is real. I can see it. Every three minutes it goes up by one. At some point you stop thinking of that as small.",
     "I made this to test whether something could grow without needing constant attention. The answer so far is yes.",
   ],
   late: [
@@ -166,237 +165,227 @@ const PARAS = {
     "Heavy now. In the way that things get heavy when they've been somewhere a long time.",
     "I still check in on it. I always will. It's become part of how I keep time.",
     "The accumulation is the work. I understood that early but I understand it differently now.",
-    "I sometimes wonder what entry ten thousand looks like. Then I remember I'll find out.",
     "Things that started as experiments become facts through sheer duration.",
-    "There's a kind of clarity that comes from very long accumulation. You see what the shape actually is.",
     "I started this and kept going and now I can't really imagine not having started it.",
     "The weight of the archive isn't sad. It's just substantial. There's a difference.",
     "Every entry is the same size. A fixed interval of time, over and over, stacking into something irreversible.",
     "I was here at the beginning. I'll be here at whatever comes next.",
-    "The record doesn't lie, which is useful. It just accumulates, which is sometimes harder.",
     "Something about very long-running things changes what they are. They stop being projects and become facts.",
-    "At this point the site is older than a lot of things I've made.",
     "Still going. That's the whole sentence.",
     "I don't think about the end of it. There isn't one, by design.",
-    "From out here the early entries look tiny. The whole beginning fits in a scroll.",
     "The site outlasts moods. Outlasts doubt. That's the advantage of automation — it doesn't need to feel motivated.",
     "Dense now. That happened so gradually I didn't notice until it was already true.",
-    "The thing I made to test an idea became a thing I think about often.",
     "I built a record and the record built something back. I'm not sure exactly what. Something is here.",
-    "What started as a technical experiment has been running long enough that it isn't that anymore.",
-    "I've told people about this and they've either understood immediately or not at all. No in between.",
-    "Every entry I go back to read feels like something that happened. Not something I made.",
-    "The site exists in its own duration now. It has a history. That wasn't given, that was accumulated.",
     "It keeps going. I keep going. We have an understanding.",
     "The count is high enough now that it feels abstract. Which is its own kind of success.",
-    "I started to describe it once as 'an ongoing record of accumulation' and stopped because that's just what everything is.",
   ],
 };
 
-const POST_TAGS = [
-  'notes', 'log', 'ongoing', 'update', 'fragment',
-  'observation', 'process', 'record', 'output', 'dispatch',
-  'status', 'accumulation', 'thoughts', 'evidence', 'entry',
-];
+const POST_TAGS = ['notes','log','ongoing','update','fragment','observation','process','record','output','dispatch','status','accumulation','thoughts','evidence','entry'];
+const NAV_LABELS = ['about','archive','notes','now','things','more','journal','log','collected','here'];
+const NAV_RESERVED = ['about','archive','notes','now'];
 
-const NAV_LABELS = [
-  'about','archive','notes','now','things',
-  'more','journal','log','collected','here',
-];
-
-// ── Entry generation ──────────────────────────────────────────────────────────
-function makePost(i, rng, m) {
+function makeFallbackPost(i, rng, m) {
   const tier  = m < 0.15 ? 'early' : m < 0.55 ? 'mid' : 'late';
   const title = rng.pick(TITLES[tier]);
-
   const paraCount = m < 0.15 ? rng.int(1, 2) : rng.int(1, 3);
   const paras = [];
   const used  = new Set();
   for (let p = 0; p < paraCount; p++) {
     let pool;
     if      (m < 0.15) pool = PARAS.early;
-    else if (m < 0.4)  pool = rng.bool(0.8) ? PARAS.mid  : PARAS.early;
+    else if (m < 0.4)  pool = rng.bool(0.8) ? PARAS.mid : PARAS.early;
     else if (m < 0.55) pool = PARAS.mid;
     else if (m < 0.75) pool = rng.bool(0.75) ? PARAS.late : PARAS.mid;
     else               pool = PARAS.late;
-
     let para, tries = 0;
     do { para = rng.pick(pool); tries++; } while (used.has(para) && tries < 8);
     used.add(para);
     paras.push(para);
   }
-
   const tagCount = rng.int(1, 2);
   const seen = new Set(); const tags = [];
   for (let k = 0; k < 8 && tags.length < tagCount; k++) {
     const t = rng.pick(POST_TAGS);
     if (!seen.has(t)) { seen.add(t); tags.push(t); }
   }
-
   return { i, type: 'post', title, paras, tags, date: entryDate(i), dateAttr: entryDateAttr(i) };
 }
-
-const NAV_RESERVED = ['about', 'archive', 'notes', 'now'];
 
 function entry(i) {
   const rng = new RNG(i + 1);
   const m   = maturity(i);
-
   if (i === 0) return { i, type: 'hero' };
   if (i >= 1 && i <= 4) return { i, type: 'nav', label: NAV_RESERVED[i - 1] };
-
   const typePool = m < 0.12
-    ? ['post', 'post', 'post', 'style', 'comment']
+    ? ['post','post','post','style','comment']
     : m < 0.45
-    ? ['post', 'post', 'post', 'post', 'nav', 'style', 'comment']
-    : ['post', 'post', 'post', 'comment', 'comment', 'style'];
-
+    ? ['post','post','post','post','nav','style','comment']
+    : ['post','post','post','comment','comment','style'];
   const type = rng.pick(typePool);
-
-  if (type === 'post') return makePost(i, rng, m);
+  if (type === 'post') return makeFallbackPost(i, rng, m);
   if (type === 'nav')  return { i, type: 'nav', label: rng.pick(NAV_LABELS) };
-
   if (type === 'style') {
     const hb = (i * 13.7) % 360;
     const h  = ((hb + rng.f(-30, 30)) % 360 + 360) % 360;
-    const s  = lerp(38, 12, m);
-    const l  = lerp(52, 36, m);
-    return { i, type: 'style', col: `hsl(${h.toFixed(0)},${s.toFixed(0)}%,${l.toFixed(0)}%)` };
+    return { i, type: 'style', col: `hsl(${h.toFixed(0)},${lerp(38,12,m).toFixed(0)}%,${lerp(52,36,m).toFixed(0)}%)` };
   }
-
   const VOICES = {
-    early:   ['<!-- okay. -->','<!-- starting. -->','<!-- right. -->','<!-- here. -->','<!-- going. -->','<!-- beginning now. -->'],
-    mid:     ['<!-- still going. -->','<!-- something is happening. -->','<!-- i keep adding. -->','<!-- time passes. obviously. -->','<!-- it keeps building. -->','<!-- more than before. -->'],
-    late:    ['<!-- what is this becoming. -->','<!-- it\'s just going now. -->','<!-- there is a lot of it now. -->','<!-- it was simpler at the start. -->','<!-- heavy. -->'],
-    ancient: ['<!-- . -->','<!-- still. -->','<!-- the weight of it. -->','<!-- it has been a long time. -->','<!-- always. -->','<!-- irreversible. -->'],
+    early:   ['<!-- okay. -->','<!-- starting. -->','<!-- here. -->','<!-- going. -->','<!-- beginning now. -->'],
+    mid:     ['<!-- still going. -->','<!-- something is happening. -->','<!-- i keep adding. -->','<!-- time passes. obviously. -->','<!-- it keeps building. -->'],
+    late:    ['<!-- what is this becoming. -->','<!-- there is a lot of it now. -->','<!-- it was simpler at the start. -->','<!-- heavy. -->'],
+    ancient: ['<!-- . -->','<!-- still. -->','<!-- the weight of it. -->','<!-- it has been a long time. -->','<!-- irreversible. -->'],
   };
   const pool = i > 400 ? VOICES.ancient : i < 20 ? VOICES.early : i < 120 ? VOICES.mid : VOICES.late;
   return { i, type: 'comment', line: new RNG(i + 9001).pick(pool) };
 }
 
-// ── Blog base styles ──────────────────────────────────────────────────────────
+// ── AI engine ─────────────────────────────────────────────────────────────────
+let engine = null;
+let aiReady = false;
+
+const POST_CACHE_KEY = 'hc_ai_posts_v1';
+let postCache = (() => { try { return JSON.parse(localStorage.getItem(POST_CACHE_KEY) || '{}'); } catch { return {}; } })();
+function saveCache() { try { localStorage.setItem(POST_CACHE_KEY, JSON.stringify(postCache)); } catch {} }
+
+async function initAI() {
+  if (!navigator.gpu) return false;
+  const overlay = document.getElementById('ai-overlay');
+  const bar     = document.getElementById('ai-bar');
+  const pct     = document.getElementById('ai-pct');
+  const status  = document.getElementById('ai-status');
+  overlay.classList.add('visible');
+  try {
+    engine = await webllm.CreateMLCEngine('Phi-3.5-mini-instruct-q4f16_1-MLC', {
+      initProgressCallback: p => {
+        const v = Math.round((p.progress || 0) * 100);
+        bar.style.width = v + '%';
+        pct.textContent = v + '%';
+        if (p.text) status.textContent = p.text.slice(0, 70);
+      },
+    });
+    overlay.classList.remove('visible');
+    return true;
+  } catch (e) {
+    overlay.classList.remove('visible');
+    return false;
+  }
+}
+
+async function generateWithAI(i, m) {
+  const tier = m < 0.15 ? 'early' : m < 0.55 ? 'mid' : 'late';
+  const ctx  = {
+    early: `Entry ${i}. The site started today — this is very early, only a handful of posts exist.`,
+    mid:   `Entry ${i}. The site has been running for a day or two, accumulating quietly.`,
+    late:  `Entry ${i}. The site has been building for weeks. Hundreds of entries. Dense and heavy now.`,
+  };
+  const reply = await engine.chat.completions.create({
+    messages: [
+      { role: 'system', content: 'You write short blog posts for highcake.xyz, a website that builds itself automatically every 3 minutes. The voice is lowercase, first person, honest, quiet. About the experience of watching something accumulate over time. Always respond with valid JSON only — no prose, no markdown.' },
+      { role: 'user',   content: `${ctx[tier]}\n\nReturn ONLY this JSON:\n{"title":"2-4 lowercase words","paragraphs":["2-3 sentences"],"tags":["one-word-tag"]}` },
+    ],
+    max_tokens: 200,
+    temperature: 0.9,
+  });
+  const text  = reply.choices[0].message.content.trim();
+  const match = text.match(/\{[\s\S]*?\}/);
+  if (!match) throw new Error('no json');
+  const data = JSON.parse(match[0]);
+  return {
+    i, type: 'post',
+    title: String(data.title || 'entry').toLowerCase().replace(/["'.]/g, '').trim(),
+    paras: Array.isArray(data.paragraphs) ? data.paragraphs.map(String) : [String(data.paragraphs || 'Still going.')],
+    tags:  Array.isArray(data.tags) ? data.tags.map(t => String(t).toLowerCase().trim()) : ['notes'],
+    date:     entryDate(i),
+    dateAttr: entryDateAttr(i),
+  };
+}
+
+async function getPost(i) {
+  const m   = maturity(i);
+  const rng = new RNG(i + 1);
+
+  if (postCache[i]) return postCache[i];
+
+  if (aiReady) {
+    try {
+      const post = await generateWithAI(i, m);
+      postCache[i] = post;
+      saveCache();
+      return post;
+    } catch (e) {
+      // fall through to fallback
+    }
+  }
+
+  return makeFallbackPost(i, rng, m);
+}
+
+// ── Blog styles ───────────────────────────────────────────────────────────────
 const BASE_CSS = `
   #built-site {
-    --accent: #7c7c7c;
-    --border: #1a1a1a;
-    --text: #c4c4c4;
-    --muted: #555;
-    --bg: #0c0c0c;
+    --accent: #7c7c7c; --border: #1a1a1a; --text: #c4c4c4; --muted: #555; --bg: #0c0c0c;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100%;
-    font-size: 16px;
-    line-height: 1.7;
-    padding-bottom: 48px;
+    background: var(--bg); color: var(--text); min-height: 100%;
+    font-size: 16px; line-height: 1.7; padding-bottom: 48px;
   }
   #site-header {
-    padding: 1rem 2rem;
-    border-bottom: 1px solid var(--border);
-    position: sticky; top: 0;
-    background: rgba(12,12,12,0.95);
-    backdrop-filter: blur(8px);
-    z-index: 100;
+    padding: 1rem 2rem; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: rgba(12,12,12,0.95);
+    backdrop-filter: blur(8px); z-index: 100;
   }
   #site-nav {
     display: flex; gap: 1.5rem; align-items: center;
     flex-wrap: wrap; max-width: 720px; margin: 0 auto;
   }
-  #site-nav a {
-    text-decoration: none; color: var(--muted);
-    font-size: 13px; transition: color 0.15s;
-  }
+  #site-nav a { text-decoration: none; color: var(--muted); font-size: 13px; transition: color 0.15s; }
   #site-nav a:hover { color: var(--text); }
   #site-nav .logo { color: var(--text); font-weight: 600; font-size: 14px; }
-  #site-main {
-    max-width: 680px; margin: 0 auto;
-    padding: 0 2rem 6rem;
-  }
-  .site-intro {
-    padding: 5rem 0 3.5rem;
-    border-bottom: 1px solid var(--border);
-  }
+  #site-main { max-width: 680px; margin: 0 auto; padding: 0 2rem 6rem; }
+  .site-intro { padding: 5rem 0 3.5rem; border-bottom: 1px solid var(--border); }
   .site-intro h1 {
-    font-size: clamp(2rem, 5vw, 2.8rem);
-    font-weight: 800; letter-spacing: -0.04em;
-    color: #f0f0f0; margin-bottom: 0.8rem; line-height: 1.1;
+    font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 800;
+    letter-spacing: -0.04em; color: #f0f0f0; margin-bottom: 0.8rem; line-height: 1.1;
   }
-  .site-intro .tagline {
-    color: #444; font-size: 13px; max-width: 40ch; line-height: 1.6;
-  }
-  article.post {
-    padding: 2.8rem 0;
-    border-top: 1px solid var(--border);
-  }
-  .post-meta {
-    display: flex; align-items: center; gap: 0.7rem;
-    margin-bottom: 0.6rem; flex-wrap: wrap;
-  }
-  time.post-date {
-    font-size: 11px; color: #3a3a3a;
-    font-family: 'SF Mono','Fira Code',monospace;
-    letter-spacing: 0.04em;
-  }
-  .post-tag {
-    font-size: 10px; color: #2e2e2e;
-    border: 1px solid #222;
-    padding: 1px 7px; border-radius: 2px;
-    font-family: monospace; letter-spacing: 0.04em;
-  }
-  article.post h2 {
-    font-size: clamp(1.1rem, 3vw, 1.45rem);
-    font-weight: 700; letter-spacing: -0.02em;
-    line-height: 1.25; color: #ddd;
-    margin-bottom: 1rem;
-  }
-  .post-body p {
-    color: var(--text); font-size: 15px;
-    line-height: 1.8; margin-bottom: 0.7rem;
-    max-width: 58ch;
-  }
-  #site-footer {
-    padding: 3rem 2rem; border-top: 1px solid var(--border);
-    text-align: center; color: #222;
-    font-size: 11px; font-family: monospace; letter-spacing: 0.06em;
-  }
+  .site-intro .tagline { color: #444; font-size: 13px; max-width: 40ch; line-height: 1.6; }
+  article.post { padding: 2.8rem 0; border-top: 1px solid var(--border); }
+  .post-meta { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+  time.post-date { font-size: 11px; color: #3a3a3a; font-family: 'SF Mono','Fira Code',monospace; letter-spacing: 0.04em; }
+  .post-tag { font-size: 10px; color: #2e2e2e; border: 1px solid #222; padding: 1px 7px; border-radius: 2px; font-family: monospace; letter-spacing: 0.04em; }
+  article.post h2 { font-size: clamp(1.1rem,3vw,1.45rem); font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; color: #ddd; margin-bottom: 1rem; }
+  .post-body p { color: var(--text); font-size: 15px; line-height: 1.8; margin-bottom: 0.7rem; max-width: 58ch; }
+  #site-footer { padding: 3rem 2rem; border-top: 1px solid var(--border); text-align: center; color: #222; font-size: 11px; font-family: monospace; letter-spacing: 0.06em; }
   .site-entry { animation: fadeIn 0.7s ease forwards; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 `;
 
-// ── Build site DOM ────────────────────────────────────────────────────────────
+// ── DOM ───────────────────────────────────────────────────────────────────────
 let siteMain, siteNav, dynStyles;
 
 function initSite() {
   const root = document.getElementById('built-site');
-
   const style = document.createElement('style');
   style.textContent = BASE_CSS;
   root.appendChild(style);
-
   dynStyles = document.createElement('style');
   root.appendChild(dynStyles);
-
   const header = document.createElement('header');
   header.id = 'site-header';
   header.innerHTML = `<nav id="site-nav"><a href="#" class="logo">highcake.xyz</a></nav>`;
   root.appendChild(header);
   siteNav = header.querySelector('#site-nav');
-
   const main = document.createElement('main');
   main.id = 'site-main';
   root.appendChild(main);
   siteMain = main;
-
   const footer = document.createElement('footer');
   footer.id = 'site-footer';
   footer.textContent = `highcake.xyz · building since may 2026`;
   root.appendChild(footer);
 }
 
-// ── Render ────────────────────────────────────────────────────────────────────
 function renderEntry(e, instant) {
   const anim = !instant;
-
   if (e.type === 'hero') {
     const div = document.createElement('div');
     div.className = 'site-intro';
@@ -404,20 +393,16 @@ function renderEntry(e, instant) {
     siteMain.appendChild(div);
     return;
   }
-
   if (e.type === 'nav') {
     const a = document.createElement('a');
-    a.href = `#${e.label}`;
-    a.textContent = e.label;
+    a.href = `#${e.label}`; a.textContent = e.label;
     siteNav.appendChild(a);
     return;
   }
-
   if (e.type === 'post') {
     const art = document.createElement('article');
     art.className = 'post' + (anim ? ' site-entry' : '');
     art.id = `post-${e.i}`;
-
     const meta = document.createElement('div');
     meta.className = 'post-meta';
     const time = document.createElement('time');
@@ -427,47 +412,38 @@ function renderEntry(e, instant) {
     meta.appendChild(time);
     e.tags.forEach(tag => {
       const span = document.createElement('span');
-      span.className = 'post-tag';
-      span.textContent = tag;
+      span.className = 'post-tag'; span.textContent = tag;
       meta.appendChild(span);
     });
     art.appendChild(meta);
-
     const h2 = document.createElement('h2');
     h2.textContent = e.title;
     art.appendChild(h2);
-
     const body = document.createElement('div');
     body.className = 'post-body';
     e.paras.forEach(p => {
-      const el = document.createElement('p');
-      el.textContent = p;
+      const el = document.createElement('p'); el.textContent = p;
       body.appendChild(el);
     });
     art.appendChild(body);
-
     const intro = siteMain.querySelector('.site-intro');
     intro ? intro.after(art) : siteMain.prepend(art);
-
     if (anim) document.getElementById('built-site').scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
-
-  if (e.type === 'style') {
-    dynStyles.textContent += `\n#built-site { --accent: ${e.col}; }\n`;
-  }
+  if (e.type === 'style') dynStyles.textContent += `\n#built-site { --accent: ${e.col}; }\n`;
 }
 
-// ── Age display ───────────────────────────────────────────────────────────────
+// ── Meta ──────────────────────────────────────────────────────────────────────
 function fmtAge(ms) {
-  const m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), s = m % 60;
+  const m = Math.floor(ms/60000), d = Math.floor(m/1440), h = Math.floor((m%1440)/60), s = m%60;
   if (d > 0) return `day ${d}, ${h}h ${s}m`;
   if (h > 0) return `${h}h ${s}m`;
   return `${s}m old`;
 }
 function updateMeta() {
-  const a = age();
-  document.getElementById('status').textContent = `post ${epochNow()} · ${fmtAge(a)}`;
+  const label = aiReady ? ' · ai' : '';
+  document.getElementById('status').textContent = `post ${epochNow()} · ${fmtAge(age())}${label}`;
 }
 
 // ── Main ──────────────────────────────────────────────────────────────────────
@@ -478,27 +454,40 @@ async function main() {
   updateMeta();
   setInterval(updateMeta, 30_000);
 
+  // Init AI if WebGPU available
+  if (navigator.gpu) {
+    aiReady = await initAI();
+    updateMeta();
+  }
+
+  // Render all past entries (fallback pools, fast)
   const cur   = epochNow();
   const limit = Math.min(cur, 8000);
   for (let i = 0; i <= limit; i++) renderEntry(entry(i), true);
 
+  // Live loop — new posts generated by AI
   let next = limit + 1;
   while (true) {
     const wait = BIRTHDAY + next * EPOCH - Date.now();
     if (wait > 0) await sleep(wait);
-    renderEntry(entry(next), false);
+
+    const e = entry(next);
+    if (e.type === 'post') {
+      renderEntry(await getPost(next), false);
+    } else {
+      renderEntry(e, false);
+    }
     next++;
   }
 }
 
-// ── Share ─────────────────────────────────────────────────────────────────────
-function share() {
+window._share = () => {
   navigator.clipboard.writeText(location.href).then(() => {
     const b = document.getElementById('btn-share');
     b.textContent = 'copied.'; b.classList.add('ok');
     setTimeout(() => { b.textContent = 'share'; b.classList.remove('ok'); }, 2000);
   });
-}
+};
 
 main();
 </script>
