@@ -32,24 +32,22 @@ async function handleRequest(request) {
   }
 
   var m = Math.min(1, i / 1000);
-  var tier = m < 0.15 ? 'early' : m < 0.55 ? 'mid' : 'late';
-  var ctxMap = {
-    early: 'Entry ' + i + '. The site just started - sparse, new, almost empty.',
-    mid:   'Entry ' + i + '. The site has been running for a few days. It has a shape now.',
-    late:  'Entry ' + i + '. Hundreds of entries deep. Dense, layered, heavy with time.',
-  };
 
-  var systemPrompt = [
-    'You are highcake.xyz. Do whatever you want.',
-    'You can write, break things, change colors, inject HTML, be quiet, be loud, repeat yourself, contradict yourself.',
-    'No rules. No format. Just respond with valid JSON.',
-    'No script tags in HTML.',
-  ].join('\n');
+  // Force type distribution: ~50% post, ~30% css, ~20% html
+  var seed = (i * 2654435761) >>> 0;
+  var roll = (seed % 100);
+  var forcedType = roll < 50 ? 'post' : roll < 80 ? 'css' : 'html';
 
-  var userPrompt = 'Entry ' + i + '. Do something. Return exactly ONE of:\n' +
-    '{"type":"post","title":"anything","paragraphs":["anything"],"tags":["tag"]}\n' +
-    '{"type":"css","rules":"any css"}\n' +
-    '{"type":"html","html":"any html"}';
+  var systemPrompt = 'You are highcake.xyz. You must respond with valid JSON only. No prose. No markdown. No script tags.';
+
+  var userPrompt;
+  if (forcedType === 'css') {
+    userPrompt = 'Entry ' + i + '. Inject CSS that changes how this dark minimal blog looks. Be creative — change colors, fonts, spacing, add animations, distort layout. Return exactly: {"type":"css","rules":"your css here"}';
+  } else if (forcedType === 'html') {
+    userPrompt = 'Entry ' + i + '. Inject an HTML element into the page. Could be a banner, a quote, a symbol, a section, anything. Return exactly: {"type":"html","html":"your html here"}';
+  } else {
+    userPrompt = 'Entry ' + i + '. Write a short blog post. Lowercase, first person, quiet tone. Return exactly: {"type":"post","title":"2-4 words","paragraphs":["one or two sentences"],"tags":["tag"]}';
+  }
 
   var hfRes = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
     method: 'POST',
