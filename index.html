@@ -36,7 +36,6 @@
     }
     .btn-bar:hover { color: #666; border-color: #333; }
     .btn-bar.ok  { color: #4ade80; border-color: #4ade80; }
-    .btn-bar.dim { color: #222; border-color: #181818; }
   </style>
 </head>
 <body>
@@ -45,7 +44,6 @@
 <div class="site-bar">
   <span class="status" id="status"></span>
   <div class="bar-btns">
-    <button class="btn-bar dim" id="btn-ai" onclick="window._aiSetup()">connect ai</button>
     <button class="btn-bar" id="btn-share" onclick="window._share()">share</button>
   </div>
 </div>
@@ -212,11 +210,11 @@ function entry(i) {
   return { i, type: 'comment', line: new RNG(i + 9001).pick(pool) };
 }
 
-// ── Hugging Face AI ───────────────────────────────────────────────────────────
-const HF_TOKEN_KEY = 'hc_hf_token';
-const HF_MODEL     = 'mistralai/Mistral-7B-Instruct-v0.3';
-let hfToken = localStorage.getItem(HF_TOKEN_KEY) || '';
-let aiReady = !!hfToken;
+// ── AI via Cloudflare Worker ──────────────────────────────────────────────────
+// Deploy worker.js to Cloudflare, then paste your worker URL here:
+const WORKER_URL = '';
+const HF_MODEL   = 'mistralai/Mistral-7B-Instruct-v0.3';
+const aiReady    = !!WORKER_URL;
 
 const POST_CACHE_KEY = 'hc_ai_posts_v1';
 let postCache = (() => { try { return JSON.parse(localStorage.getItem(POST_CACHE_KEY) || '{}'); } catch { return {}; } })();
@@ -229,9 +227,9 @@ async function generateWithAI(i, m) {
     mid:   `Entry ${i}. The site has been running for a day or two, accumulating quietly.`,
     late:  `Entry ${i}. The site has been building for weeks. Hundreds of entries. Dense and heavy now.`,
   };
-  const res = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
+  const res = await fetch(WORKER_URL, {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${hfToken}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: HF_MODEL,
       messages: [
@@ -242,7 +240,7 @@ async function generateWithAI(i, m) {
       temperature: 0.9,
     }),
   });
-  if (!res.ok) throw new Error(`hf ${res.status}`);
+  if (!res.ok) throw new Error(`worker ${res.status}`);
   const json  = await res.json();
   const text  = json.choices[0].message.content.trim();
   const match = text.match(/\{[\s\S]*?\}/);
@@ -394,31 +392,7 @@ function fmtAge(ms) {
 }
 function updateMeta() {
   document.getElementById('status').textContent = `post ${epochNow()} · ${fmtAge(age())}`;
-  const btn = document.getElementById('btn-ai');
-  if (aiReady) {
-    btn.textContent = 'ai ✓';
-    btn.classList.remove('dim');
-    btn.classList.add('ok');
-  } else {
-    btn.textContent = 'connect ai';
-    btn.classList.add('dim');
-    btn.classList.remove('ok');
-  }
 }
-
-// ── AI setup UI ───────────────────────────────────────────────────────────────
-window._aiSetup = () => {
-  const msg = aiReady
-    ? `AI is connected (${HF_MODEL}).\n\nPaste a new token to replace, or leave empty to disconnect:`
-    : `Connect Hugging Face AI\n\nGet a free token at huggingface.co/settings/tokens\n(Read access is enough)\n\nPaste your token (hf_...):`;
-  const tok = window.prompt(msg, hfToken);
-  if (tok === null) return;
-  hfToken  = tok.trim();
-  aiReady  = !!hfToken;
-  if (hfToken) localStorage.setItem(HF_TOKEN_KEY, hfToken);
-  else         localStorage.removeItem(HF_TOKEN_KEY);
-  updateMeta();
-};
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 const sleep = ms => new Promise(r => setTimeout(r, ms));
