@@ -363,6 +363,43 @@ function updateMeta() {
   document.getElementById('status').textContent = `post ${epochNow()} · ${fmtAge(age())}`;
 }
 
+// ── Upgrade recent fallback posts to AI versions ───────────────────────────
+async function upgradeRecentAI(limit) {
+  const RECENT = 25;
+  const start  = Math.max(0, limit - RECENT + 1);
+  const slots  = [];
+  for (let i = start; i <= limit; i++) {
+    if (entry(i).type === 'post') slots.push(i);
+  }
+  const results = await Promise.allSettled(slots.map(i => getAIEntry(i)));
+  results.forEach((r, idx) => {
+    if (r.status !== 'fulfilled') return;
+    const e = r.value;
+    const i = slots[idx];
+    if (e.type === 'post') {
+      const el = document.getElementById('post-' + i);
+      if (!el) return;
+      el.querySelector('h2').textContent = e.title;
+      const body = el.querySelector('.post-body');
+      body.innerHTML = '';
+      e.paras.forEach(p => { const pe = document.createElement('p'); pe.textContent = p; body.appendChild(pe); });
+      el.querySelectorAll('.post-tag').forEach(t => t.remove());
+      const meta = el.querySelector('.post-meta');
+      e.tags.forEach(tag => { const s = document.createElement('span'); s.className = 'post-tag'; s.textContent = tag; meta.appendChild(s); });
+    } else if (e.type === 'ai_css') {
+      const el = document.getElementById('post-' + i);
+      if (el) el.remove();
+      dynStyles.textContent += '\n/* ' + i + ' */\n' + e.rules + '\n';
+    } else if (e.type === 'ai_html') {
+      const el = document.getElementById('post-' + i);
+      if (!el) return;
+      const wrap = document.createElement('div');
+      wrap.innerHTML = e.html;
+      el.replaceWith(wrap);
+    }
+  });
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -374,6 +411,9 @@ async function main() {
   const cur   = epochNow();
   const limit = Math.min(cur, 8000);
   for (let i = 0; i <= limit; i++) renderEntry(entry(i), true);
+
+  // Quietly upgrade recent fallback posts with AI versions from KV
+  upgradeRecentAI(limit);
 
   let next = limit + 1;
   while (true) {
