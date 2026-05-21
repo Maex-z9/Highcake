@@ -386,17 +386,8 @@ async function upgradeRecentAI(limit) {
       el.querySelectorAll('.post-tag').forEach(t => t.remove());
       const meta = el.querySelector('.post-meta');
       e.tags.forEach(tag => { const s = document.createElement('span'); s.className = 'post-tag'; s.textContent = tag; meta.appendChild(s); });
-    } else if (e.type === 'ai_css') {
-      const el = document.getElementById('post-' + i);
-      if (el) el.remove();
-      dynStyles.textContent += '\n/* ' + i + ' */\n' + e.rules + '\n';
-    } else if (e.type === 'ai_html') {
-      const el = document.getElementById('post-' + i);
-      if (!el) return;
-      const wrap = document.createElement('div');
-      wrap.innerHTML = e.html;
-      el.replaceWith(wrap);
     }
+    // ai_css and ai_html are not re-applied on refresh — only text posts persist visually
   });
 }
 

@@ -67,7 +67,11 @@ Decide what to do. Return exactly ONE of:
 
     let entry;
     if (data.type === 'css') {
-      entry = { i, type: 'ai_css', rules: String(data.rules || '') };
+      const rules = String(data.rules || '')
+        .replace(/display\s*:\s*none/gi, 'display:block')
+        .replace(/visibility\s*:\s*hidden/gi, 'visibility:visible')
+        .replace(/opacity\s*:\s*0\b/gi, 'opacity:0.01');
+      entry = { i, type: 'ai_css', rules };
     } else if (data.type === 'html') {
       const safe = String(data.html || '')
         .replace(/<script[\s\S]*?<\/script>/gi, '')
