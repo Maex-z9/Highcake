@@ -692,7 +692,8 @@ function renderEntry(e, instant) {
     });
     art.appendChild(body);
 
-    siteMain.appendChild(art);
+    const intro = siteMain.querySelector('.site-intro');
+    intro ? intro.after(art) : siteMain.prepend(art);
     if (anim) scrollSite();
     return;
   }
@@ -705,7 +706,7 @@ function renderEntry(e, instant) {
 
 function scrollSite() {
   const site = document.getElementById('built-site');
-  site.scrollTo({ top: site.scrollHeight, behavior: 'smooth' });
+  site.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Editor ────────────────────────────────────────────────────────────────────
