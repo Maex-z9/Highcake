@@ -63,16 +63,35 @@ class RNG {
 const lerp     = (a, b, t) => a + (b - a) * t;
 const maturity = i => Math.min(1, i / 1000);
 const BIRTHDAY = new Date('2026-05-21T10:00:00Z').getTime();
-const EPOCH    = 3 * 60 * 1000;
-function age()      { return Date.now() - BIRTHDAY; }
-function epochNow() { return Math.floor(age() / EPOCH); }
+function age() { return Date.now() - BIRTHDAY; }
+
+// Each entry has its own random interval — sometimes 5 seconds, sometimes 10 minutes
+function entryInterval(i) {
+  const rng = new RNG(i * 6271 + 98317);
+  if (rng.next() < 0.3) return rng.int(5, 30) * 1000;   // 30% chance: rapid burst
+  return rng.int(60, 480) * 1000;                         // 70% chance: 1–8 minutes
+}
+
+// Cache entry timestamps so we don't recompute sums repeatedly
+const _ts = [BIRTHDAY];
+function entryTimestamp(i) {
+  while (_ts.length <= i) _ts.push(_ts[_ts.length - 1] + entryInterval(_ts.length - 1));
+  return _ts[i];
+}
+
+function epochNow() {
+  const now = Date.now();
+  let i = 0;
+  while (entryTimestamp(i + 1) <= now && i < 10000) i++;
+  return i;
+}
 
 function entryDate(i) {
-  const d = new Date(BIRTHDAY + i * EPOCH);
+  const d = new Date(entryTimestamp(i));
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 }
 function entryDateAttr(i) {
-  const d = new Date(BIRTHDAY + i * EPOCH);
+  const d = new Date(entryTimestamp(i));
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
@@ -408,7 +427,7 @@ async function main() {
 
   let next = limit + 1;
   while (true) {
-    const wait = BIRTHDAY + next * EPOCH - Date.now();
+    const wait = entryTimestamp(next) - Date.now();
     if (wait > 0) await sleep(wait);
     const e = entry(next);
     if (e.type === 'post') {
