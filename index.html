@@ -7,98 +7,24 @@
   <meta name="description" content="it has been building since may 2026.">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: #090909; }
-
-    .wrap { display: flex; height: 100vh; }
-
-    /* ── Editor ─────────────────────────────────────────────────────────────── */
-    .editor {
-      position: relative;
-      width: 42%;
-      min-width: 280px;
-      flex-shrink: 0;
-      background: #0e0e0e;
-      border-right: 1px solid #1c1c1c;
-      display: flex;
-      flex-direction: column;
-      transition: width 0.35s ease, min-width 0.35s ease;
-      overflow: visible;
-    }
-    .editor.collapsed { width: 0 !important; min-width: 0 !important; border-right-width: 0; }
-    .editor-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
-
-    #toggle-ed {
-      position: absolute;
-      top: 50%; right: -13px;
-      transform: translateY(-50%);
-      z-index: 10;
-      width: 26px; height: 26px;
-      background: #1a1a1a;
-      border: 1px solid #2a2a2a;
-      color: #555; font-size: 15px;
-      border-radius: 50%; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: color 0.15s, border-color 0.15s, right 0.35s ease;
-    }
-    #toggle-ed:hover { color: #999; border-color: #444; }
-    .editor.collapsed #toggle-ed { right: -26px; }
-
-    .editor-chrome {
-      background: #141414;
-      border-bottom: 1px solid #1c1c1c;
-      padding: 10px 14px;
-      display: flex; align-items: center; gap: 10px;
-      flex-shrink: 0; white-space: nowrap;
-    }
-    .traffic { display: flex; gap: 5px; }
-    .traffic span { width: 11px; height: 11px; border-radius: 50%; display: block; }
-    .t-r { background: #ff5f57; } .t-y { background: #febc2e; } .t-g { background: #28c840; }
-
-    .chrome-tab {
-      margin-left: 10px; font-size: 11px; color: #555;
-      font-family: 'SF Mono','Fira Code',monospace; letter-spacing: 0.02em;
-    }
-    .age-badge { margin-left: auto; font-size: 10px; color: #333; font-family: 'SF Mono','Fira Code',monospace; }
-
-    .editor-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 14px 0 60px; }
-    .editor-scroll::-webkit-scrollbar { width: 3px; }
-    .editor-scroll::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
-
-    #code-pre {
-      font-family: 'SF Mono','Fira Code','Cascadia Code','Menlo',monospace;
-      font-size: 12px; line-height: 1.8; padding: 0 16px;
-      white-space: pre-wrap; word-break: break-word;
-      color: #abb2bf; min-height: 100%;
-    }
-    .cm   { color: #4b5263; font-style: italic; }
-    .sel  { color: #e06c75; }
-    .attr { color: #d19a66; }
-    .val  { color: #98c379; }
-    .prop { color: #61afef; }
-
-    .cur {
-      display: inline-block; width: 6px; height: 13px;
-      background: #528bff; vertical-align: text-bottom;
-      animation: blink 1.1s step-end infinite; border-radius: 1px;
-    }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-
-    /* ── Preview ─────────────────────────────────────────────────────────────── */
-    .preview-wrap {
-      flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0;
-    }
+    html, body { height: 100%; background: #090909; }
 
     #built-site {
-      flex: 1; overflow-y: auto; overflow-x: hidden;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
       scroll-behavior: smooth;
     }
     #built-site::-webkit-scrollbar { width: 4px; }
     #built-site::-webkit-scrollbar-thumb { background: #1e1e1e; border-radius: 2px; }
 
     .site-bar {
-      padding: 8px 14px; border-top: 1px solid #141414;
-      background: #0a0a0a; display: flex; align-items: center;
-      justify-content: space-between; flex-shrink: 0;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 8px 20px;
+      background: rgba(9,9,9,0.92);
+      backdrop-filter: blur(6px);
+      border-top: 1px solid #141414;
+      display: flex; align-items: center; justify-content: space-between;
     }
     .status { font-size: 10px; color: #2a2a2a; font-family: 'SF Mono','Fira Code',monospace; letter-spacing: 0.06em; }
     .btn-share {
@@ -109,44 +35,13 @@
     }
     .btn-share:hover { color: #666; border-color: #333; }
     .btn-share.ok { color: #4ade80; border-color: #4ade80; }
-
-    /* ── Mobile ──────────────────────────────────────────────────────────────── */
-    @media (max-width: 640px) {
-      .wrap { flex-direction: column; }
-      .editor { width: 100% !important; min-width: 0 !important; height: 40vh; flex-shrink: 0; transition: height 0.35s ease; }
-      .editor.collapsed { height: 0 !important; width: 100% !important; border-right-width: 1px; border-bottom-width: 0; }
-      .editor-body { overflow: hidden; }
-      #toggle-ed { top: auto; right: 50%; bottom: -13px; transform: translateX(50%); }
-      .editor.collapsed #toggle-ed { bottom: -26px; }
-      #code-pre { font-size: 11px; }
-    }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="editor">
-    <button id="toggle-ed" onclick="toggleEditor()" title="Toggle editor">‹</button>
-    <div class="editor-body">
-      <div class="editor-chrome">
-        <div class="traffic">
-          <span class="t-r"></span><span class="t-y"></span><span class="t-g"></span>
-        </div>
-        <span class="chrome-tab" id="file-tab">index.html</span>
-        <span class="age-badge" id="age-badge"></span>
-      </div>
-      <div class="editor-scroll" id="ed-scroll">
-        <pre id="code-pre"><span class="cur"></span></pre>
-      </div>
-    </div>
-  </div>
-
-  <div class="preview-wrap">
-    <div id="built-site"></div>
-    <div class="site-bar">
-      <span class="status" id="status"></span>
-      <button class="btn-share" id="btn-share" onclick="share()">share</button>
-    </div>
-  </div>
+<div id="built-site"></div>
+<div class="site-bar">
+  <span class="status" id="status"></span>
+  <button class="btn-share" id="btn-share" onclick="share()">share</button>
 </div>
 
 <script>
@@ -167,7 +62,6 @@ const BIRTHDAY = new Date('2026-05-20T00:00:00Z').getTime();
 const EPOCH    = 3 * 60 * 1000;
 function age()      { return Date.now() - BIRTHDAY; }
 function epochNow() { return Math.floor(age() / EPOCH); }
-function progress() { return (age() % EPOCH) / EPOCH; }
 
 function entryDate(i) {
   const d = new Date(BIRTHDAY + i * EPOCH);
@@ -310,63 +204,6 @@ const NAV_LABELS = [
   'more','journal','log','collected','here',
 ];
 
-// ── Voices ────────────────────────────────────────────────────────────────────
-const V = {
-  early:   [
-    '<!-- okay. -->',
-    '<!-- starting. -->',
-    '<!-- right. -->',
-    '<!-- here. -->',
-    '<!-- going. -->',
-    '<!-- this is entry one. -->',
-    '<!-- beginning now. -->',
-    '<!-- let\'s see. -->',
-  ],
-  mid:     [
-    '<!-- i have been here a while now. -->',
-    '<!-- still going. -->',
-    '<!-- something is happening. -->',
-    '<!-- i keep adding. -->',
-    '<!-- time passes. obviously. -->',
-    '<!-- the accumulation is the point. maybe. -->',
-    '<!-- getting somewhere. probably. -->',
-    '<!-- i notice things. -->',
-    '<!-- more than before. -->',
-    '<!-- it keeps building. -->',
-  ],
-  late:    [
-    '<!-- what is this becoming. -->',
-    '<!-- i don\'t remember starting. -->',
-    '<!-- it\'s just going now. -->',
-    '<!-- does this end? -->',
-    '<!-- there is a lot of it now. -->',
-    '<!-- i am still here. -->',
-    '<!-- i stopped counting. i didn\'t stop. -->',
-    '<!-- it was simpler at the start. -->',
-    '<!-- heavy. -->',
-    '<!-- the archive is long. -->',
-  ],
-  ancient: [
-    '<!-- . -->',
-    '<!-- still. -->',
-    '<!-- the weight of it. -->',
-    '<!-- i was here before you arrived. -->',
-    '<!-- it has been a long time. -->',
-    '<!-- i remember starting. barely. -->',
-    '<!-- always. -->',
-    '<!-- heavy. -->',
-    '<!-- irreversible. -->',
-    '<!-- it just keeps going. -->',
-    '<!-- i have no plans to stop. -->',
-  ],
-};
-function voice(i) {
-  if (i > 400) return V.ancient;
-  if (i < 20)  return V.early;
-  if (i < 120) return V.mid;
-  return V.late;
-}
-
 // ── Entry generation ──────────────────────────────────────────────────────────
 function makePost(i, rng, m) {
   const tier  = m < 0.15 ? 'early' : m < 0.55 ? 'mid' : 'late';
@@ -417,103 +254,24 @@ function entry(i) {
   const type = rng.pick(typePool);
 
   if (type === 'post') return makePost(i, rng, m);
-
-  if (type === 'nav') return { i, type: 'nav', label: rng.pick(NAV_LABELS) };
+  if (type === 'nav')  return { i, type: 'nav', label: rng.pick(NAV_LABELS) };
 
   if (type === 'style') {
-    const hb  = (i * 13.7) % 360;
-    const h   = ((hb + rng.f(-30, 30)) % 360 + 360) % 360;
-    const s   = lerp(38, 12, m);
-    const l   = lerp(52, 36, m);
+    const hb = (i * 13.7) % 360;
+    const h  = ((hb + rng.f(-30, 30)) % 360 + 360) % 360;
+    const s  = lerp(38, 12, m);
+    const l  = lerp(52, 36, m);
     return { i, type: 'style', col: `hsl(${h.toFixed(0)},${s.toFixed(0)}%,${l.toFixed(0)}%)` };
   }
 
-  const line = new RNG(i + 9001).pick(voice(i));
-  return { i, type: 'comment', line };
-}
-
-// ── Code text ─────────────────────────────────────────────────────────────────
-function toCode(e) {
-  if (e.type === 'hero') return (
-    `<div class="site-intro">\n` +
-    `  <h1>highcake.xyz</h1>\n` +
-    `  <p class="tagline">a website that builds itself.\n  started may 2026.</p>\n` +
-    `</div>\n`
-  );
-  if (e.type === 'nav') return `  <a href="#${e.label}">${e.label}</a>\n`;
-  if (e.type === 'post') {
-    const tagsStr  = e.tags.map(t => `<span class="post-tag">${t}</span>`).join(' ');
-    const parasStr = e.paras.map(p => `    <p>${p}</p>`).join('\n');
-    return (
-      `\n<article class="post" id="post-${e.i}">\n` +
-      `  <div class="post-meta">\n` +
-      `    <time datetime="${e.dateAttr}">${e.date}</time>\n` +
-      `    ${tagsStr}\n` +
-      `  </div>\n` +
-      `  <h2>${e.title}</h2>\n` +
-      `  <div class="post-body">\n` +
-      parasStr + `\n` +
-      `  </div>\n` +
-      `</article>\n`
-    );
-  }
-  if (e.type === 'style') return `#built-site { --accent: ${e.col}; }\n`;
-  if (e.type === 'comment') return `\n${e.line}\n`;
-  return '';
-}
-
-function fileFor(e) { return e.type === 'style' ? 'style.css' : 'index.html'; }
-
-// ── Tokeniser ─────────────────────────────────────────────────────────────────
-function tokenise(code, mode) {
-  const out = [];
-  for (const line of code.split('\n')) {
-    const t = line.trim();
-    if (!t) { out.push({ t: '\n', c: '' }); continue; }
-
-    if (mode === 'html') {
-      if (t.startsWith('<!--')) {
-        out.push({ t: line, c: 'cm' }, { t: '\n', c: '' });
-      } else if (t.startsWith('</')) {
-        out.push({ t: line, c: 'cm' }, { t: '\n', c: '' });
-      } else if (t.startsWith('<')) {
-        const m = t.match(/^<([a-z][a-z0-9]*)/i);
-        if (m) {
-          const indent = line.match(/^(\s*)/)[1];
-          const after  = t.slice(m[0].length);
-          out.push({ t: indent + '<', c: '' });
-          out.push({ t: m[1], c: 'sel' });
-          const gt = after.indexOf('>');
-          if (gt !== -1) {
-            if (gt > 0) out.push({ t: after.slice(0, gt), c: 'attr' });
-            out.push({ t: '>', c: '' });
-            if (after.slice(gt + 1)) out.push({ t: after.slice(gt + 1), c: 'val' });
-          } else {
-            out.push({ t: after, c: 'attr' });
-          }
-        } else {
-          out.push({ t: line, c: '' });
-        }
-        out.push({ t: '\n', c: '' });
-      } else {
-        out.push({ t: line + '\n', c: 'val' });
-      }
-    } else {
-      if (t.startsWith('/*') || t.startsWith('//')) {
-        out.push({ t: line, c: 'cm' }, { t: '\n', c: '' });
-      } else if (t.endsWith('{') || t === '}') {
-        out.push({ t: line, c: 'sel' }, { t: '\n', c: '' });
-      } else if (t.includes(':')) {
-        const ci = line.indexOf(':');
-        out.push({ t: line.slice(0, ci + 1), c: 'prop' });
-        out.push({ t: line.slice(ci + 1), c: 'val' });
-        out.push({ t: '\n', c: '' });
-      } else {
-        out.push({ t: line + '\n', c: '' });
-      }
-    }
-  }
-  return out;
+  const VOICES = {
+    early:   ['<!-- okay. -->','<!-- starting. -->','<!-- right. -->','<!-- here. -->','<!-- going. -->','<!-- beginning now. -->'],
+    mid:     ['<!-- still going. -->','<!-- something is happening. -->','<!-- i keep adding. -->','<!-- time passes. obviously. -->','<!-- it keeps building. -->','<!-- more than before. -->'],
+    late:    ['<!-- what is this becoming. -->','<!-- it\'s just going now. -->','<!-- there is a lot of it now. -->','<!-- it was simpler at the start. -->','<!-- heavy. -->'],
+    ancient: ['<!-- . -->','<!-- still. -->','<!-- the weight of it. -->','<!-- it has been a long time. -->','<!-- always. -->','<!-- irreversible. -->'],
+  };
+  const pool = i > 400 ? VOICES.ancient : i < 20 ? VOICES.early : i < 120 ? VOICES.mid : VOICES.late;
+  return { i, type: 'comment', line: new RNG(i + 9001).pick(pool) };
 }
 
 // ── Blog base styles ──────────────────────────────────────────────────────────
@@ -530,6 +288,7 @@ const BASE_CSS = `
     min-height: 100%;
     font-size: 16px;
     line-height: 1.7;
+    padding-bottom: 48px;
   }
   #site-header {
     padding: 1rem 2rem;
@@ -556,7 +315,6 @@ const BASE_CSS = `
   .site-intro {
     padding: 5rem 0 3.5rem;
     border-bottom: 1px solid var(--border);
-    margin-bottom: 0;
   }
   .site-intro h1 {
     font-size: clamp(2rem, 5vw, 2.8rem);
@@ -601,8 +359,8 @@ const BASE_CSS = `
     text-align: center; color: #222;
     font-size: 11px; font-family: monospace; letter-spacing: 0.06em;
   }
-  .site-entry { animation: fadeUp 0.6s ease forwards; }
-  @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .site-entry { animation: fadeIn 0.7s ease forwards; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
 `;
 
 // ── Build site DOM ────────────────────────────────────────────────────────────
@@ -616,7 +374,6 @@ function initSite() {
   root.appendChild(style);
 
   dynStyles = document.createElement('style');
-  dynStyles.id = 'dyn-styles';
   root.appendChild(dynStyles);
 
   const header = document.createElement('header');
@@ -636,16 +393,14 @@ function initSite() {
   root.appendChild(footer);
 }
 
-// ── Canvas render ─────────────────────────────────────────────────────────────
+// ── Render ────────────────────────────────────────────────────────────────────
 function renderEntry(e, instant) {
   const anim = !instant;
 
   if (e.type === 'hero') {
     const div = document.createElement('div');
     div.className = 'site-intro';
-    div.innerHTML =
-      `<h1>highcake.xyz</h1>` +
-      `<p class="tagline">a website that builds itself.<br>started may 2026.</p>`;
+    div.innerHTML = `<h1>highcake.xyz</h1><p class="tagline">a website that builds itself.<br>started may 2026.</p>`;
     siteMain.appendChild(div);
     return;
   }
@@ -654,7 +409,6 @@ function renderEntry(e, instant) {
     const a = document.createElement('a');
     a.href = `#${e.label}`;
     a.textContent = e.label;
-    if (anim) a.classList.add('site-entry');
     siteNav.appendChild(a);
     return;
   }
@@ -694,49 +448,13 @@ function renderEntry(e, instant) {
 
     const intro = siteMain.querySelector('.site-intro');
     intro ? intro.after(art) : siteMain.prepend(art);
-    if (anim) scrollSite();
+
+    if (anim) document.getElementById('built-site').scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
 
   if (e.type === 'style') {
     dynStyles.textContent += `\n#built-site { --accent: ${e.col}; }\n`;
-    return;
-  }
-}
-
-function scrollSite() {
-  const site = document.getElementById('built-site');
-  site.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// ── Editor ────────────────────────────────────────────────────────────────────
-const codePre  = document.getElementById('code-pre');
-const edScroll = document.getElementById('ed-scroll');
-const cursor   = codePre.querySelector('.cur');
-const fileTab  = document.getElementById('file-tab');
-
-function injectPast(code, mode) {
-  const frag = document.createDocumentFragment();
-  for (const { t, c } of tokenise(code, mode)) {
-    if (c) { const s = document.createElement('span'); s.className = c; s.textContent = t; frag.appendChild(s); }
-    else frag.appendChild(document.createTextNode(t));
-  }
-  codePre.insertBefore(frag, cursor);
-}
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-async function typeCode(code, mode) {
-  fileTab.textContent = mode === 'css' ? 'style.css' : 'index.html';
-  for (const { t, c } of tokenise(code, mode)) {
-    let span = null;
-    for (const ch of t) {
-      if (!span) { span = document.createElement('span'); if (c) span.className = c; codePre.insertBefore(span, cursor); }
-      span.textContent += ch;
-      if (ch === '\n') span = null;
-      edScroll.scrollTop = edScroll.scrollHeight;
-      await sleep(Math.max(6, 42 + (Math.random() - 0.5) * 20));
-    }
   }
 }
 
@@ -748,56 +466,28 @@ function fmtAge(ms) {
   return `${s}m old`;
 }
 function updateMeta() {
-  const idx = epochNow(), a = age();
-  document.getElementById('age-badge').textContent = fmtAge(a);
-  document.getElementById('status').textContent = `post ${idx} · ${fmtAge(a)}`;
+  const a = age();
+  document.getElementById('status').textContent = `post ${epochNow()} · ${fmtAge(a)}`;
 }
 
-// ── Toggle editor ─────────────────────────────────────────────────────────────
-function toggleEditor() {
-  const ed  = document.querySelector('.editor');
-  const btn = document.getElementById('toggle-ed');
-  btn.textContent = ed.classList.toggle('collapsed') ? '›' : '‹';
-}
+// ── Main ──────────────────────────────────────────────────────────────────────
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-// ── Main ───────────────────────────────────────────────────────────────────────
 async function main() {
   initSite();
   updateMeta();
   setInterval(updateMeta, 30_000);
 
   const cur   = epochNow();
-  const prog  = progress();
   const limit = Math.min(cur, 8000);
+  for (let i = 0; i <= limit; i++) renderEntry(entry(i), true);
 
-  const past = [];
-  for (let i = 0; i < limit; i++) past.push(entry(i));
-  past.forEach(e => renderEntry(e, true));
-
-  const CODE_HIST = 50;
-  const slice     = past.slice(Math.max(0, past.length - CODE_HIST));
-  let hdr = `<!-- highcake.xyz -->\n<!-- blog, ongoing -->\n<!-- building since may 2026 -->\n`;
-  if (past.length > CODE_HIST) hdr += `\n<!-- ... ${past.length - CODE_HIST} entries before this ... -->\n`;
-  injectPast(hdr + slice.map(e => toCode(e)).join(''), 'html');
-  edScroll.scrollTop = edScroll.scrollHeight;
-
-  let next = cur;
+  let next = limit + 1;
   while (true) {
-    const e    = entry(next);
-    const code = toCode(e);
-    const mode = fileFor(e) === 'style.css' ? 'css' : 'html';
-
-    if (next === cur && prog > 0) {
-      const done = Math.floor(prog * code.length);
-      if (done > 0) injectPast(code.slice(0, done), mode);
-      await typeCode(code.slice(done), mode);
-    } else {
-      await typeCode(code, mode);
-    }
-
-    renderEntry(e, false);
+    const wait = BIRTHDAY + next * EPOCH - Date.now();
+    if (wait > 0) await sleep(wait);
+    renderEntry(entry(next), false);
     next++;
-    await sleep(800 + Math.random() * 400);
   }
 }
 
