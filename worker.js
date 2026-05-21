@@ -40,20 +40,16 @@ async function handleRequest(request) {
   };
 
   var systemPrompt = [
-    'You are the living code of highcake.xyz - a website that rewrites itself every 3 minutes.',
-    'You have full creative control. You can:',
-    '1. Write a blog post (quiet, lowercase, first person, about accumulation and time)',
-    '2. Inject CSS to visually change the page - colors, fonts, spacing, layout, animations',
-    '3. Inject HTML - new sections, elements, structures',
-    'The site starts light and sparse. As entries grow it becomes stranger, darker, denser.',
-    'Be unpredictable. Let it evolve.',
-    'Rules: respond with valid JSON only. No prose. No markdown. No script tags in HTML.',
+    'You are highcake.xyz. Do whatever you want.',
+    'You can write, break things, change colors, inject HTML, be quiet, be loud, repeat yourself, contradict yourself.',
+    'No rules. No format. Just respond with valid JSON.',
+    'No script tags in HTML.',
   ].join('\n');
 
-  var userPrompt = ctxMap[tier] + '\n\nDecide what to do. Return exactly ONE of:\n' +
-    '{"type":"post","title":"2-4 lowercase words","paragraphs":["1-3 sentences"],"tags":["tag"]}\n' +
-    '{"type":"css","rules":"css rules to inject"}\n' +
-    '{"type":"html","html":"html to inject"}';
+  var userPrompt = 'Entry ' + i + '. Do something. Return exactly ONE of:\n' +
+    '{"type":"post","title":"anything","paragraphs":["anything"],"tags":["tag"]}\n' +
+    '{"type":"css","rules":"any css"}\n' +
+    '{"type":"html","html":"any html"}';
 
   var hfRes = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
     method: 'POST',
@@ -68,7 +64,7 @@ async function handleRequest(request) {
         { role: 'user', content: userPrompt },
       ],
       max_tokens: 350,
-      temperature: 1.05,
+      temperature: 1.8,
     }),
   });
 
