@@ -22,7 +22,7 @@
       display: flex;
       flex-direction: column;
       transition: width 0.35s ease, min-width 0.35s ease;
-      overflow: visible; /* allow toggle button to remain visible when collapsed */
+      overflow: visible;
     }
     .editor.collapsed { width: 0 !important; min-width: 0 !important; border-right-width: 0; }
     .editor-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
@@ -178,88 +178,126 @@ function entryDateAttr(i) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-// ── Content generation ────────────────────────────────────────────────────────
-const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-
-const W = {
-  sub:   ['this','everything','all of it','the work','the process','what\'s here',
-          'the accumulation','the entries','the record','time','the pattern',
-          'nothing','something','the additions','the list','what\'s building',
-          'the site','the whole thing','most of it','any of it'],
-  verb:  ['continues','persists','grows','compounds','builds','deepens',
-          'stacks up','expands','remains','goes on','keeps going','adds up',
-          'accumulates','piles up','layers','increases','extends'],
-  state: ['is not finished','has no end','keeps building','is still going',
-          'is becoming something','has been here a while','is what it is',
-          'does not stop','is more than before','was started and not stopped',
-          'has no clear shape','is accumulating','is ongoing','is unresolved',
-          'keeps changing','refuses to stop'],
-  iverb: ['keep going','keep adding','am still here','notice things',
-          'come back','watch it build','add to this','have been here a while',
-          'cannot stop','return','keep returning','stay with it',
-          'am figuring it out','am not sure where this is going',
-          'started this','did not plan to continue','lost count',
-          'notice the pattern','keep watching','have no plans to stop'],
-  noun:  ['entries','additions','layers','notes','fragments','records',
-          'observations','things','accumulations','outputs','pieces',
-          'items','parts','elements','instances'],
-  adj:   ['more','ongoing','unfinished','persistent','dense','heavy',
-          'quiet','slow','still','strange','unclear','substantial',
-          'new','old','recent','extra','additional','further'],
-  adv:   ['still','again','now','gradually','continuously','eventually',
-          'somehow','anyway','regardless','endlessly','always','often'],
-  subL:  ['the weight of it','all of this','what has built up','the density',
-          'the archive','what started small','the long accumulation',
-          'the full record','what is here now','the whole of it',
-          'everything that followed','what i started'],
-  verbL: ['presses down','settles','sits','holds','anchors','endures',
-          'does not move','will not stop','has no end','persists'],
-  adjL:  ['heavy','vast','irreversible','substantial','deep','complete',
-          'overwhelming','permanent','total','immovable'],
+// ── Content pools ─────────────────────────────────────────────────────────────
+const TITLES = {
+  early: [
+    'notes', 'starting', 'day one', 'first entry', 'here',
+    'beginning', 'an entry', 'okay', 'this is it', 'a record',
+    'early', 'a start', 'just beginning', 'something', 'entry',
+    'first notes', 'from the start', 'initial', 'hello',
+  ],
+  mid: [
+    'accumulation', 'update', 'still going', 'progress', 'observations',
+    'it has been a while', 'something is happening', 'notes from here',
+    'ongoing', 'building', 'dispatch', 'from the middle',
+    'further along', 'the process', 'notes on accumulation',
+    'more of this', 'deeper in', 'a few things', 'report',
+    'from inside it', 'in progress', 'current state',
+    'checkpoint', 'the count', 'still here',
+  ],
+  late: [
+    'the weight of it', 'still', 'from far in', 'all of this',
+    'density', 'heavy', 'it keeps going', 'what it became',
+    'the long accumulation', 'what remains', 'at this point',
+    'this far in', 'the full record', 'irreversible',
+    'the archive', 'it was different at the start', 'the whole of it',
+    'mass', 'still going', 'deep in', 'after all this',
+    'the distance', 'duration', 'from the archive',
+  ],
 };
 
-function genSentence(rng, m) {
-  const late = m > 0.5 && rng.bool(0.35);
-  const sub = rng.pick(late ? W.subL  : W.sub);
-  const vrb = rng.pick(late ? W.verbL : W.verb);
-  const adj = rng.pick(late ? W.adjL  : W.adj);
-  const t   = rng.int(0, 10);
-  if (t === 0) return cap(`${sub} ${vrb}.`);
-  if (t === 1) return cap(`${sub} ${rng.pick(W.state)}.`);
-  if (t === 2) return cap(`I ${rng.pick(W.iverb)}.`);
-  if (t === 3) return cap(`there ${rng.bool() ? 'are' : 'is'} ${rng.bool() ? adj+' ' : ''}${rng.pick(W.noun)} now.`);
-  if (t === 4) return cap(`the ${rng.pick(W.noun)} ${vrb} ${rng.pick(W.adv)}.`);
-  if (t === 5) return cap(`${adj} ${rng.pick(W.noun)}.`);
-  if (t === 6) return cap(`${rng.pick(W.adv)}, ${sub} ${vrb}.`);
-  if (t === 7) return cap(`I ${rng.pick(W.iverb)}. ${sub} ${vrb}.`);
-  if (t === 8) return cap(`${sub} ${rng.pick(W.state)}. ${rng.pick(W.adv)}.`);
-  if (t === 9) return cap(`${vrb}. ${rng.pick(W.adv)}.`);
-  return m > 0.7 ? cap(`${adj}.`) : cap(`${sub} ${vrb}.`);
-}
-
-function genTitle(rng, m) {
-  if (m < 0.12) {
-    const SIMPLE = ['notes','beginning','starting','entry','record','log','here','day one','early'];
-    const PRE    = ['first','early','an','a','some','one','this'];
-    return rng.bool(0.55) ? rng.pick(SIMPLE) : `${rng.pick(PRE)} ${rng.pick(SIMPLE)}`;
-  }
-  if (m < 0.55) {
-    const NOUNS = ['accumulation','process','progress','observations','additions',
-                   'entries','notes','output','dispatch','record','work','things','update'];
-    const PREPS = ['on','from','about','still','more','further','continued','ongoing','re:'];
-    const t = rng.int(0, 3);
-    if (t === 0) return rng.pick(NOUNS);
-    if (t === 1) return `${rng.pick(PREPS)} ${rng.pick(NOUNS)}`;
-    if (t === 2) return `${rng.pick(PREPS)} the ${rng.pick(NOUNS)}`;
-    return rng.pick(PREPS);
-  }
-  const PHRASES = ['still','from deep in it','all of this','the weight of it',
-                   'it keeps going','i have lost count','the long accumulation',
-                   'from far in','what remains','heavy','at this point',
-                   'this far in','the full record','it was different'];
-  const NOUNS_L = ['weight','density','depth','accumulation','archive','mass'];
-  return rng.bool(0.55) ? rng.pick(PHRASES) : `the ${rng.pick(NOUNS_L)}`;
-}
+const PARAS = {
+  early: [
+    "This is the start. I don't know yet what it will become.",
+    "I made this today. There isn't much here yet.",
+    "Something needed to exist here, so I made something.",
+    "I set this up because I wanted to build something that keeps going. That's still the reason.",
+    "The first entries are always the strangest. You're making something with no sense of its own future.",
+    "Not sure what this is yet. I'll keep adding to it and find out.",
+    "It exists now. That counts for something.",
+    "I built this and now I'm watching it grow. That's the whole plan.",
+    "Starting is the hard part, so I just did it.",
+    "I wanted a place that built itself. So I made one.",
+    "Empty at first. That changes.",
+    "The beginning of something feels light. There's nothing to carry yet.",
+    "I've been wanting to build something like this for a while. Here it is.",
+    "Every three minutes this site adds a new entry. This is one of the first.",
+    "A record of the thing existing. That's enough for now.",
+    "I don't have a finished version of this in mind. That's intentional.",
+    "It's just started. Come back later.",
+    "Small at first. That changes.",
+    "I built this because I didn't want to build something that was ever finished. Here's the start of that.",
+    "No plan beyond: keep going. That might be enough.",
+  ],
+  mid: [
+    "There are more entries now than I expected. I keep checking back and something new is always here. That was the plan but it still surprises me.",
+    "The site has a shape now. Not a finished shape, but you can see the outline of what it's becoming.",
+    "Something changed around the fortieth or fiftieth entry. I can't point to exactly what. It just started feeling like a real thing.",
+    "I've been watching this build for a couple of days. The early entries look different from here — smaller, more tentative, like they didn't know what came after.",
+    "It keeps going whether I'm actively thinking about it or not. That's either the best part or the strangest part.",
+    "I scroll back sometimes and count. More than I thought. Less than I expected.",
+    "The pattern is clearer from the middle than from the start. You can't see something properly while you're still figuring out what it is.",
+    "This is what persistence looks like when you strip everything else away. Just the accumulation.",
+    "I didn't plan this exactly. I planned something and this is what happened. That seems fine.",
+    "Every entry adds to the total weight of the thing. At some point that weight becomes the point.",
+    "It was much simpler at the start. Not worse — just smaller, like it hadn't grown into itself yet.",
+    "I like that it doesn't stop. Most things have endings built in. This one doesn't.",
+    "The archive grows. That's all it does. That turns out to be enough.",
+    "I check in on it the way you'd check on something growing in a window. Slow, steady, certain.",
+    "There's something satisfying about a thing that just keeps adding to itself. No drama. No conclusion.",
+    "Someone asked me what this is. I said it's a website that grows. They asked grows into what. I said I don't know yet. That was the honest answer.",
+    "I'm not sure when the tone shifted. Somewhere in the middle it started taking itself more seriously. I let it.",
+    "The entries stack up. You stop noticing each one individually and start seeing the whole mass of them.",
+    "There are hours I don't look at it. It still builds. That's the design. It still feels like something every time I come back.",
+    "I think about it differently now than I did at the start. The thing that seemed small started seeming significant.",
+    "It's not a diary. Not a blog in any usual sense. It's more like a machine that watches itself run.",
+    "People have found this somehow. It keeps building regardless.",
+    "The fact that it's automatic doesn't make it feel less real. If anything the opposite.",
+    "Somewhere around here the count stopped being small. I stopped being able to picture the whole thing at once.",
+    "Every three minutes. Whether I'm here or not. The site adds an entry and moves on.",
+    "I built this to outlast my attention span. That was a real concern. It worked.",
+    "The entries are consistent. The format doesn't change. The count just grows. That's the whole logic.",
+    "There's more of it than there used to be. That simple fact is kind of the whole point.",
+    "I've started describing it to people as: a website that makes itself. That's accurate.",
+    "I revisit old entries sometimes. They feel settled, like they've found their place in the order of things.",
+    "The count is real. I can see it. Every three minutes it goes up by one. At some point you stop thinking of that as small.",
+    "I made this to test whether something could grow without needing constant attention. The answer so far is yes.",
+  ],
+  late: [
+    "I don't remember what it looked like at the start anymore. I'd have to scroll all the way back. I haven't.",
+    "There's too much of it now to hold in your head at once. That's either a problem or the point. I've decided it's the point.",
+    "It has been a long time. The site keeps building whether I'm paying attention or not. That used to feel strange. Now it just feels true.",
+    "The early entries are somewhere in the archive. They look like a different version of the project.",
+    "At this depth you stop thinking about what it means and start thinking about what it is. It's a lot of entries. It keeps going.",
+    "Heavy now. In the way that things get heavy when they've been somewhere a long time.",
+    "I still check in on it. I always will. It's become part of how I keep time.",
+    "The accumulation is the work. I understood that early but I understand it differently now.",
+    "I sometimes wonder what entry ten thousand looks like. Then I remember I'll find out.",
+    "Things that started as experiments become facts through sheer duration.",
+    "There's a kind of clarity that comes from very long accumulation. You see what the shape actually is.",
+    "I started this and kept going and now I can't really imagine not having started it.",
+    "The weight of the archive isn't sad. It's just substantial. There's a difference.",
+    "Every entry is the same size. A fixed interval of time, over and over, stacking into something irreversible.",
+    "I was here at the beginning. I'll be here at whatever comes next.",
+    "The record doesn't lie, which is useful. It just accumulates, which is sometimes harder.",
+    "Something about very long-running things changes what they are. They stop being projects and become facts.",
+    "At this point the site is older than a lot of things I've made.",
+    "Still going. That's the whole sentence.",
+    "I don't think about the end of it. There isn't one, by design.",
+    "From out here the early entries look tiny. The whole beginning fits in a scroll.",
+    "The site outlasts moods. Outlasts doubt. That's the advantage of automation — it doesn't need to feel motivated.",
+    "Dense now. That happened so gradually I didn't notice until it was already true.",
+    "The thing I made to test an idea became a thing I think about often.",
+    "I built a record and the record built something back. I'm not sure exactly what. Something is here.",
+    "What started as a technical experiment has been running long enough that it isn't that anymore.",
+    "I've told people about this and they've either understood immediately or not at all. No in between.",
+    "Every entry I go back to read feels like something that happened. Not something I made.",
+    "The site exists in its own duration now. It has a history. That wasn't given, that was accumulated.",
+    "It keeps going. I keep going. We have an understanding.",
+    "The count is high enough now that it feels abstract. Which is its own kind of success.",
+    "I started to describe it once as 'an ongoing record of accumulation' and stopped because that's just what everything is.",
+  ],
+};
 
 const POST_TAGS = [
   'notes', 'log', 'ongoing', 'update', 'fragment',
@@ -274,10 +312,53 @@ const NAV_LABELS = [
 
 // ── Voices ────────────────────────────────────────────────────────────────────
 const V = {
-  early:   ['<!-- okay. -->','<!-- starting. -->','<!-- right. -->','<!-- let\'s see. -->','<!-- here. -->','<!-- going. -->','<!-- this is the start. -->'],
-  mid:     ['<!-- i\'ve been here a while now. -->','<!-- getting somewhere. probably. -->','<!-- i notice things. -->','<!-- still going. -->','<!-- something is happening. -->','<!-- i keep adding. -->','<!-- time passes. obviously. -->','<!-- the accumulation is the point. maybe. -->'],
-  late:    ['<!-- what is this becoming. -->','<!-- i don\'t remember starting. -->','<!-- it\'s just going now. -->','<!-- does this end? -->','<!-- there is a lot of it now. -->','<!-- i am still here. -->','<!-- i stopped counting. i didn\'t stop. -->','<!-- it was simpler at the start. -->'],
-  ancient: ['<!-- . -->','<!-- still. -->','<!-- the weight of it. -->','<!-- i was here before you arrived. -->','<!-- it has been a long time. -->','<!-- i remember starting. barely. -->','<!-- always. -->','<!-- heavy. -->'],
+  early:   [
+    '<!-- okay. -->',
+    '<!-- starting. -->',
+    '<!-- right. -->',
+    '<!-- here. -->',
+    '<!-- going. -->',
+    '<!-- this is entry one. -->',
+    '<!-- beginning now. -->',
+    '<!-- let\'s see. -->',
+  ],
+  mid:     [
+    '<!-- i have been here a while now. -->',
+    '<!-- still going. -->',
+    '<!-- something is happening. -->',
+    '<!-- i keep adding. -->',
+    '<!-- time passes. obviously. -->',
+    '<!-- the accumulation is the point. maybe. -->',
+    '<!-- getting somewhere. probably. -->',
+    '<!-- i notice things. -->',
+    '<!-- more than before. -->',
+    '<!-- it keeps building. -->',
+  ],
+  late:    [
+    '<!-- what is this becoming. -->',
+    '<!-- i don\'t remember starting. -->',
+    '<!-- it\'s just going now. -->',
+    '<!-- does this end? -->',
+    '<!-- there is a lot of it now. -->',
+    '<!-- i am still here. -->',
+    '<!-- i stopped counting. i didn\'t stop. -->',
+    '<!-- it was simpler at the start. -->',
+    '<!-- heavy. -->',
+    '<!-- the archive is long. -->',
+  ],
+  ancient: [
+    '<!-- . -->',
+    '<!-- still. -->',
+    '<!-- the weight of it. -->',
+    '<!-- i was here before you arrived. -->',
+    '<!-- it has been a long time. -->',
+    '<!-- i remember starting. barely. -->',
+    '<!-- always. -->',
+    '<!-- heavy. -->',
+    '<!-- irreversible. -->',
+    '<!-- it just keeps going. -->',
+    '<!-- i have no plans to stop. -->',
+  ],
 };
 function voice(i) {
   if (i > 400) return V.ancient;
@@ -288,19 +369,33 @@ function voice(i) {
 
 // ── Entry generation ──────────────────────────────────────────────────────────
 function makePost(i, rng, m) {
-  const title     = genTitle(rng, m);
-  const paraCount = m < 0.2 ? rng.int(1, 2) : rng.int(1, 3);
-  const paras     = Array.from({ length: paraCount }, () => {
-    const sentCount = rng.int(2, 4);
-    return Array.from({ length: sentCount }, () => genSentence(rng, m)).join(' ');
-  });
+  const tier  = m < 0.15 ? 'early' : m < 0.55 ? 'mid' : 'late';
+  const title = rng.pick(TITLES[tier]);
+
+  const paraCount = m < 0.15 ? rng.int(1, 2) : rng.int(1, 3);
+  const paras = [];
+  const used  = new Set();
+  for (let p = 0; p < paraCount; p++) {
+    let pool;
+    if      (m < 0.15) pool = PARAS.early;
+    else if (m < 0.4)  pool = rng.bool(0.8) ? PARAS.mid  : PARAS.early;
+    else if (m < 0.55) pool = PARAS.mid;
+    else if (m < 0.75) pool = rng.bool(0.75) ? PARAS.late : PARAS.mid;
+    else               pool = PARAS.late;
+
+    let para, tries = 0;
+    do { para = rng.pick(pool); tries++; } while (used.has(para) && tries < 8);
+    used.add(para);
+    paras.push(para);
+  }
+
   const tagCount = rng.int(1, 2);
-  const seen = new Set();
-  const tags = [];
+  const seen = new Set(); const tags = [];
   for (let k = 0; k < 8 && tags.length < tagCount; k++) {
     const t = rng.pick(POST_TAGS);
     if (!seen.has(t)) { seen.add(t); tags.push(t); }
   }
+
   return { i, type: 'post', title, paras, tags, date: entryDate(i), dateAttr: entryDateAttr(i) };
 }
 
@@ -330,8 +425,7 @@ function entry(i) {
     const h   = ((hb + rng.f(-30, 30)) % 360 + 360) % 360;
     const s   = lerp(38, 12, m);
     const l   = lerp(52, 36, m);
-    const col = `hsl(${h.toFixed(0)},${s.toFixed(0)}%,${l.toFixed(0)}%)`;
-    return { i, type: 'style', col };
+    return { i, type: 'style', col: `hsl(${h.toFixed(0)},${s.toFixed(0)}%,${l.toFixed(0)}%)` };
   }
 
   const line = new RNG(i + 9001).pick(voice(i));
@@ -607,7 +701,6 @@ function renderEntry(e, instant) {
     dynStyles.textContent += `\n#built-site { --accent: ${e.col}; }\n`;
     return;
   }
-  // comment: no DOM change
 }
 
 function scrollSite() {
