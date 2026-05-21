@@ -62,7 +62,7 @@ class RNG {
 // ── Timing ────────────────────────────────────────────────────────────────────
 const lerp     = (a, b, t) => a + (b - a) * t;
 const maturity = i => Math.min(1, i / 1000);
-const BIRTHDAY = new Date('2026-05-20T00:00:00Z').getTime();
+const BIRTHDAY = new Date('2026-05-21T10:00:00Z').getTime();
 const EPOCH    = 3 * 60 * 1000;
 function age()      { return Date.now() - BIRTHDAY; }
 function epochNow() { return Math.floor(age() / EPOCH); }
@@ -216,7 +216,7 @@ const WORKER_URL = 'https://highcake.maxschuler.workers.dev';
 const HF_MODEL   = 'mistralai/Mistral-7B-Instruct-v0.3';
 const aiReady    = !!WORKER_URL;
 
-const POST_CACHE_KEY = 'hc_ai_posts_v1';
+const POST_CACHE_KEY = 'hc_ai_posts_v2';
 let postCache = (() => { try { return JSON.parse(localStorage.getItem(POST_CACHE_KEY) || '{}'); } catch { return {}; } })();
 function saveCache() { try { localStorage.setItem(POST_CACHE_KEY, JSON.stringify(postCache)); } catch {} }
 
@@ -329,7 +329,7 @@ function initSite() {
   siteMain = main;
   const footer = document.createElement('footer');
   footer.id = 'site-footer';
-  footer.textContent = `highcake.xyz · building since may 2026`;
+  footer.textContent = `highcake.xyz · building since may 21, 2026`;
   root.appendChild(footer);
 }
 
@@ -338,7 +338,7 @@ function renderEntry(e, instant) {
   if (e.type === 'hero') {
     const div = document.createElement('div');
     div.className = 'site-intro';
-    div.innerHTML = `<h1>highcake.xyz</h1><p class="tagline">a website that builds itself.<br>started may 2026.</p>`;
+    div.innerHTML = `<h1>highcake.xyz</h1><p class="tagline">a website that builds itself.<br>started may 21, 2026.</p>`;
     siteMain.appendChild(div);
     return;
   }
