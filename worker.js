@@ -62,7 +62,7 @@ async function handleRequest(request) {
         { role: 'user', content: userPrompt },
       ],
       max_tokens: 350,
-      temperature: 1.8,
+      temperature: 1.0,
     }),
   });
 
@@ -74,15 +74,20 @@ async function handleRequest(request) {
   var choice = hfJson.choices && hfJson.choices[0];
   var text = (choice && choice.message && choice.message.content || '').trim();
   var match = text.match(/\{[\s\S]*\}/);
-  if (!match) {
-    return new Response('parse error', { status: 502, headers: CORS_HEADERS });
+  var data = null;
+  if (match) {
+    try { data = JSON.parse(match[0]); } catch (e) {}
   }
 
-  var data;
-  try {
-    data = JSON.parse(match[0]);
-  } catch (e) {
-    return new Response('json error', { status: 502, headers: CORS_HEADERS });
+  // Fallback when model returns unparseable output — still store something
+  if (!data) {
+    if (forcedType === 'css') {
+      data = { type: 'css', rules: '#built-site { --accent: hsl(' + (i * 37 % 360) + ',40%,55%); }' };
+    } else if (forcedType === 'html') {
+      data = { type: 'html', html: '<p style="text-align:center;color:#333;padding:1rem">&#x2022;</p>' };
+    } else {
+      data = { type: 'post', title: 'entry ' + i, paragraphs: ['.'], tags: ['log'] };
+    }
   }
 
   var entry;
