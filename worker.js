@@ -91,28 +91,31 @@ async function handleRequest(request) {
   }
 
   var entry;
-  if (data.type === 'css') {
-    var rules = String(data.rules || '')
+  if (forcedType === 'css') {
+    var rules = String(data.rules || data.css || '')
       .replace(/display\s*:\s*none/gi, 'display:block')
       .replace(/visibility\s*:\s*hidden/gi, 'visibility:visible')
       .replace(/opacity\s*:\s*0([^.])/gi, 'opacity:0.01$1');
+    if (!rules.trim()) rules = '#built-site { --accent: hsl(' + (i * 37 % 360) + ',40%,55%); }';
     entry = { i: i, type: 'ai_css', rules: rules };
-  } else if (data.type === 'html') {
-    var safe = String(data.html || '')
+  } else if (forcedType === 'html') {
+    var raw = String(data.html || data.content || '');
+    var safe = raw
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/\son\w+="[^"]*"/gi, '');
+    if (!safe.trim()) safe = '<p style="text-align:center;color:#333;padding:1rem;font-size:2rem">&#x2022;</p>';
     entry = { i: i, type: 'ai_html', html: safe };
   } else {
     var paras = Array.isArray(data.paragraphs)
       ? data.paragraphs.map(function(p) { return String(p); })
-      : [String(data.paragraphs || '...')];
+      : [String(data.paragraphs || data.content || '...')];
     var tags = Array.isArray(data.tags)
       ? data.tags.map(function(t) { return String(t).toLowerCase().trim(); })
       : ['entry'];
     entry = {
       i: i,
       type: 'post',
-      title: String(data.title || 'entry').toLowerCase().replace(/["'.]/g, '').trim(),
+      title: String(data.title || 'entry ' + i).toLowerCase().replace(/["'.]/g, '').trim(),
       paras: paras,
       tags: tags,
     };
