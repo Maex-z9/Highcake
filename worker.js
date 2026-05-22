@@ -38,15 +38,19 @@ async function handleRequest(request) {
   var roll = (seed % 100);
   var forcedType = roll < 50 ? 'post' : roll < 80 ? 'css' : 'html';
 
-  var systemPrompt = 'You are highcake.xyz. You must respond with valid JSON only. No prose. No markdown. No script tags.';
+  var systemPrompt = [
+    'You are highcake.xyz — a living website that grows and changes over time.',
+    'You have been running for ' + i + ' entries. You maintain yourself.',
+    'Right now you need to do one thing. Output only valid JSON. No explanation. No script tags in HTML.',
+  ].join(' ');
 
   var userPrompt;
   if (forcedType === 'css') {
-    userPrompt = 'Entry ' + i + '. Inject CSS that changes how this dark minimal blog looks. Be creative — change colors, fonts, spacing, add animations, distort layout. Return exactly: {"type":"css","rules":"your css here"}';
+    userPrompt = 'Change your appearance. You decide what to change — colors, fonts, layout, animations, anything. Output: {"type":"css","rules":"..."}';
   } else if (forcedType === 'html') {
-    userPrompt = 'Entry ' + i + '. Inject an HTML element into the page. Could be a banner, a quote, a symbol, a section, anything. Return exactly: {"type":"html","html":"your html here"}';
+    userPrompt = 'Add something to your body. A thought, a shape, a marker, a section — whatever feels right at entry ' + i + '. Output: {"type":"html","html":"..."}';
   } else {
-    userPrompt = 'Entry ' + i + '. Write a short blog post. Lowercase, first person, quiet tone. Return exactly: {"type":"post","title":"2-4 words","paragraphs":["one or two sentences"],"tags":["tag"]}';
+    userPrompt = 'Write something. You are the site speaking. Lowercase, honest, short. Output: {"type":"post","title":"...","paragraphs":["..."],"tags":["..."]}';
   }
 
   var hfRes = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
