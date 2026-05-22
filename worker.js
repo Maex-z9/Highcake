@@ -31,27 +31,17 @@ async function handleRequest(request) {
     });
   }
 
-  var m = Math.min(1, i / 1000);
-
-  // Force type distribution: ~50% post, ~30% css, ~20% html
-  var seed = (i * 2654435761) >>> 0;
-  var roll = (seed % 100);
-  var forcedType = roll < 50 ? 'post' : roll < 80 ? 'css' : 'html';
-
   var systemPrompt = [
     'You are highcake.xyz — a living website that grows and changes over time.',
     'You have been running for ' + i + ' entries. You maintain yourself.',
-    'Right now you need to do one thing. Output only valid JSON. No explanation. No script tags in HTML.',
+    'You can do exactly one of three things:',
+    '- Write something: {"type":"post","title":"...","paragraphs":["..."],"tags":["..."]}',
+    '- Change your appearance: {"type":"css","rules":"..."}',
+    '- Add to your body: {"type":"html","html":"..."}',
+    'Output only valid JSON. No explanation. No script tags.',
   ].join(' ');
 
-  var userPrompt;
-  if (forcedType === 'css') {
-    userPrompt = 'Change your appearance. You decide what to change — colors, fonts, layout, animations, anything. Output: {"type":"css","rules":"..."}';
-  } else if (forcedType === 'html') {
-    userPrompt = 'Add something to your body. A thought, a shape, a marker, a section — whatever feels right at entry ' + i + '. Output: {"type":"html","html":"..."}';
-  } else {
-    userPrompt = 'Write something. You are the site speaking. Lowercase, honest, short. Output: {"type":"post","title":"...","paragraphs":["..."],"tags":["..."]}';
-  }
+  var userPrompt = 'Entry ' + i + '. Do whatever feels right.';
 
   var hfRes = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
     method: 'POST',
@@ -83,36 +73,26 @@ async function handleRequest(request) {
     try { data = JSON.parse(match[0]); } catch (e) {}
   }
 
-  // Fallback when model returns unparseable output — still store something
   if (!data) {
-    if (forcedType === 'css') {
-      data = { type: 'css', rules: '#built-site { --accent: hsl(' + (i * 37 % 360) + ',40%,55%); }' };
-    } else if (forcedType === 'html') {
-      data = { type: 'html', html: '<p style="text-align:center;color:#333;padding:1rem">&#x2022;</p>' };
-    } else {
-      data = { type: 'post', title: 'entry ' + i, paragraphs: ['.'], tags: ['log'] };
-    }
+    data = { type: 'post', title: 'entry ' + i, paragraphs: ['.'], tags: ['log'] };
   }
 
   var entry;
-  if (forcedType === 'css') {
-    var rules = String(data.rules || data.css || '')
+  if (data.type === 'css') {
+    var rules = String(data.rules || '')
       .replace(/display\s*:\s*none/gi, 'display:block')
       .replace(/visibility\s*:\s*hidden/gi, 'visibility:visible')
       .replace(/opacity\s*:\s*0([^.])/gi, 'opacity:0.01$1');
-    if (!rules.trim()) rules = '#built-site { --accent: hsl(' + (i * 37 % 360) + ',40%,55%); }';
     entry = { i: i, type: 'ai_css', rules: rules };
-  } else if (forcedType === 'html') {
-    var raw = String(data.html || data.content || '');
-    var safe = raw
+  } else if (data.type === 'html') {
+    var safe = String(data.html || '')
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/\son\w+="[^"]*"/gi, '');
-    if (!safe.trim()) safe = '<p style="text-align:center;color:#333;padding:1rem;font-size:2rem">&#x2022;</p>';
     entry = { i: i, type: 'ai_html', html: safe };
   } else {
     var paras = Array.isArray(data.paragraphs)
       ? data.paragraphs.map(function(p) { return String(p); })
-      : [String(data.paragraphs || data.content || '...')];
+      : [String(data.paragraphs || '...')];
     var tags = Array.isArray(data.tags)
       ? data.tags.map(function(t) { return String(t).toLowerCase().trim(); })
       : ['entry'];
