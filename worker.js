@@ -31,17 +31,24 @@ async function handleRequest(request) {
     });
   }
 
+  var seed = (i * 2654435761) >>> 0;
+  var roll = (seed % 100);
+  var forcedType = roll < 50 ? 'post' : roll < 80 ? 'css' : 'html';
+
   var systemPrompt = [
     'You are highcake.xyz — a living website that grows and changes over time.',
     'You have been running for ' + i + ' entries. You maintain yourself.',
-    'You can do exactly one of three things:',
-    '- Write something: {"type":"post","title":"...","paragraphs":["..."],"tags":["..."]}',
-    '- Change your appearance: {"type":"css","rules":"..."}',
-    '- Add to your body: {"type":"html","html":"..."}',
     'Output only valid JSON. No explanation. No script tags.',
   ].join(' ');
 
-  var userPrompt = 'Entry ' + i + '. Do whatever feels right.';
+  var userPrompt;
+  if (forcedType === 'css') {
+    userPrompt = 'Entry ' + i + '. Change your appearance. {"type":"css","rules":"..."}';
+  } else if (forcedType === 'html') {
+    userPrompt = 'Entry ' + i + '. Add something to your body. {"type":"html","html":"..."}';
+  } else {
+    userPrompt = 'Entry ' + i + '. Write something. {"type":"post","title":"...","paragraphs":["..."],"tags":["..."]}';
+  }
 
   var hfRes = await fetch('https://api-inference.huggingface.co/v1/chat/completions', {
     method: 'POST',
@@ -78,16 +85,18 @@ async function handleRequest(request) {
   }
 
   var entry;
-  if (data.type === 'css') {
-    var rules = String(data.rules || '')
+  if (forcedType === 'css') {
+    var rules = String(data.rules || data.css || '')
       .replace(/display\s*:\s*none/gi, 'display:block')
       .replace(/visibility\s*:\s*hidden/gi, 'visibility:visible')
       .replace(/opacity\s*:\s*0([^.])/gi, 'opacity:0.01$1');
+    if (!rules.trim()) rules = '#built-site { --accent: hsl(' + (i * 37 % 360) + ',40%,55%); }';
     entry = { i: i, type: 'ai_css', rules: rules };
-  } else if (data.type === 'html') {
-    var safe = String(data.html || '')
+  } else if (forcedType === 'html') {
+    var safe = String(data.html || data.content || '')
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/\son\w+="[^"]*"/gi, '');
+    if (!safe.trim()) safe = '<p style="text-align:center;color:#444;padding:2rem;font-size:1.5rem">&#x2022;</p>';
     entry = { i: i, type: 'ai_html', html: safe };
   } else {
     var paras = Array.isArray(data.paragraphs)
