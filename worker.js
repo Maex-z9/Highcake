@@ -31,8 +31,7 @@ async function handleRequest(request) {
     });
   }
 
-  var seed = (i * 2654435761) >>> 0;
-  var roll = (seed % 100);
+  var roll = (i * 37 + 13) % 100;
   var forcedType = roll < 50 ? 'post' : roll < 80 ? 'css' : 'html';
 
   var systemPrompt = [
@@ -86,11 +85,8 @@ async function handleRequest(request) {
 
   var entry;
   if (forcedType === 'css') {
-    var rules = String(data.rules || data.css || '')
-      .replace(/display\s*:\s*none/gi, 'display:block')
-      .replace(/visibility\s*:\s*hidden/gi, 'visibility:visible')
-      .replace(/opacity\s*:\s*0([^.])/gi, 'opacity:0.01$1');
-    if (!rules.trim()) rules = '#built-site { --accent: hsl(' + (i * 37 % 360) + ',40%,55%); }';
+    var rules = String(data.rules || data.css || '');
+    if (!rules.trim()) { rules = '#built-site { --accent: hsl(' + (i * 37 % 360) + ',40%,55%); }'; }
     entry = { i: i, type: 'ai_css', rules: rules };
   } else if (forcedType === 'html') {
     var safe = String(data.html || data.content || '')
