@@ -36,7 +36,7 @@ async function handleRequest(request) {
   var forcedType = roll < 50 ? 'post' : roll < 80 ? 'css' : 'html';
 
   var systemPrompt = [
-    'You are highcake.xyz — a living website that grows and changes over time.',
+    'You are highcake.xyz, a living website that grows and changes over time.',
     'You have been running for ' + i + ' entries. You maintain yourself.',
     'Output only valid JSON. No explanation. No script tags.',
   ].join(' ');
